@@ -50,7 +50,7 @@ namespace rexStd::fs {
             throw signalException{interpreter::makeErr(L"fsError", L"Invalid member: `rexFile` == nullptr")};
 
         vbytes src(args[0].isRef() ? args[0].getRef().getBytes() : args[0].getBytes(), '\0');
-        if (fread(src.data(), src.size(), 1, fp) == -1)
+        if (fwrite(src.data(), src.size(), 1, fp) == -1)
             throw signalException{interpreter::makeErr(L"fsError",
                                                        L"Cannot access filestream: [Errno " + std::to_wstring(errno) +
                                                        L"]")};
