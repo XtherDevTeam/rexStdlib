@@ -63,3 +63,31 @@
 - Type: function
 - Call format: `std.fs.access(filePath, testFlag)`
 - Result: `boolean`
+
+### std.fs.stat
+
+- Type: function
+- Call format: `std.fs.stat(filePath)`
+- Result: `str`
+- Throws: `fsError` if something goes wrong
+
+### std.fs.unlink
+
+- Type: function
+- Call format: `std.fs.unlink(filePath)`
+- Result: `null`
+- Throws: `fsError` if something goes wrong
+
+### std.fs.mkdir
+
+- Type: function
+- Call format: `std.fs.mkdir(filePath)`
+- Result: `null`
+- Throws: `fsError` if something goes wrong
+
+### std.fs.mkdirs
+
+- Type: function
+- Call format: `std.fs.mkdirs(filePath)`
+- Result: `null`
+- Throws: `fsError` if something goes wrong

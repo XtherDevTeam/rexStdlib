@@ -32,6 +32,14 @@ namespace rexStd::fs {
 
     nativeFn(access, interpreter, args, _);
 
+    nativeFn(stat, interpreter, args, _);
+
+    nativeFn(unlink, interpreter, args, _);
+
+    nativeFn(mkdir, interpreter, args, _);
+
+    nativeFn(mkdirs, interpreter, args, _);
+
     value::cxtObject getMethodsCxt();
 }
 
