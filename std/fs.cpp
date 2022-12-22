@@ -191,7 +191,7 @@ namespace rexStd::fs {
     nativeFn(mkdir, interpreter, args, _) {
         vbytes filePath{wstring2string(args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr())};
         std::error_code ec;
-        if (!std::filesystem::create_directory(filePath, ec))
+        if (std::filesystem::create_directory(filePath, ec); ec)
             throw signalException{
                     interpreter::makeErr(L"fsError", L"Unable to create directory: [Errno " + std::to_wstring(ec.value()) + L"]" +
                                                      string2wstring(ec.message()))};
@@ -201,7 +201,7 @@ namespace rexStd::fs {
     nativeFn(mkdirs, interpreter, args, _) {
         vbytes filePath{wstring2string(args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr())};
         std::error_code ec;
-        if (!std::filesystem::create_directories(filePath, ec))
+        if (std::filesystem::create_directories(filePath, ec); ec)
             throw signalException{
                     interpreter::makeErr(L"fsError", L"Unable to create directories: [Errno " + std::to_wstring(ec.value()) + L"]" +
                                                      string2wstring(ec.message()))};
