@@ -120,6 +120,11 @@ namespace rexStd::fs {
         cxt[L"unlink"] = managePtr(value{(value::nativeFuncPtr) unlink});
         cxt[L"mkdir"] = managePtr(value{(value::nativeFuncPtr) mkdir});
         cxt[L"mkdirs"] = managePtr(value{(value::nativeFuncPtr) mkdirs});
+        cxt[L"remove"] = managePtr(value{(value::nativeFuncPtr) remove});
+        cxt[L"removeAll"] = managePtr(value{(value::nativeFuncPtr) removeAll});
+        cxt[L"listDir"] = managePtr(value{(value::nativeFuncPtr) listDir});
+        cxt[L"realpath"] = managePtr(value{(value::nativeFuncPtr) realpath});
+
         cxt[L"F_OK"] = managePtr(value{(vint) F_OK});
         cxt[L"W_OK"] = managePtr(value{(vint) W_OK});
         cxt[L"R_OK"] = managePtr(value{(vint) R_OK});
@@ -140,8 +145,9 @@ namespace rexStd::fs {
         std::filesystem::file_status stat = std::filesystem::status(filePath, ec);
         if (ec)
             throw signalException{
-                    interpreter::makeErr(L"fsError", L"Unable to stat file: [Errno " + std::to_wstring(ec.value()) + L"]" +
-                                                     string2wstring(ec.message()))};
+                    interpreter::makeErr(L"fsError",
+                                         L"Unable to stat file: [Errno " + std::to_wstring(ec.value()) + L"]" +
+                                         string2wstring(ec.message()))};
         value ret{};
         switch (stat.type()) {
             case std::filesystem::file_type::none:
@@ -183,8 +189,9 @@ namespace rexStd::fs {
         std::error_code ec;
         if (!std::filesystem::remove(filePath, ec))
             throw signalException{
-                    interpreter::makeErr(L"fsError", L"Unable to unlink file: [Errno " + std::to_wstring(ec.value()) + L"]" +
-                            string2wstring(ec.message()))};
+                    interpreter::makeErr(L"fsError",
+                                         L"Unable to unlink file: [Errno " + std::to_wstring(ec.value()) + L"]" +
+                                         string2wstring(ec.message()))};
         return {};
     }
 
@@ -193,8 +200,9 @@ namespace rexStd::fs {
         std::error_code ec;
         if (std::filesystem::create_directory(filePath, ec); ec)
             throw signalException{
-                    interpreter::makeErr(L"fsError", L"Unable to create directory: [Errno " + std::to_wstring(ec.value()) + L"]" +
-                                                     string2wstring(ec.message()))};
+                    interpreter::makeErr(L"fsError",
+                                         L"Unable to create directory: [Errno " + std::to_wstring(ec.value()) + L"]" +
+                                         string2wstring(ec.message()))};
         return {};
     }
 
@@ -203,8 +211,58 @@ namespace rexStd::fs {
         std::error_code ec;
         if (std::filesystem::create_directories(filePath, ec); ec)
             throw signalException{
-                    interpreter::makeErr(L"fsError", L"Unable to create directories: [Errno " + std::to_wstring(ec.value()) + L"]" +
+                    interpreter::makeErr(L"fsError",
+                                         L"Unable to create directories: [Errno " + std::to_wstring(ec.value()) + L"]" +
+                                         string2wstring(ec.message()))};
+        return {};
+    }
+
+    nativeFn(remove, interpreter, args, _) {
+        vbytes filePath{wstring2string(args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr())};
+        std::error_code ec;
+        if (std::filesystem::remove(filePath, ec); ec)
+            throw signalException{
+                    interpreter::makeErr(L"fsError", L"Unable to remove: [Errno " + std::to_wstring(ec.value()) + L"]" +
                                                      string2wstring(ec.message()))};
         return {};
+    }
+
+    nativeFn(removeAll, interpreter, args, _) {
+        vbytes filePath{wstring2string(args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr())};
+        std::error_code ec;
+        if (std::filesystem::remove_all(filePath, ec); ec)
+            throw signalException{
+                    interpreter::makeErr(L"fsError", L"Unable to remove: [Errno " + std::to_wstring(ec.value()) + L"]" +
+                                                     string2wstring(ec.message()))};
+        return {};
+    }
+
+    nativeFn(listDir, interpreter, args, _) {
+        vbytes filePath{wstring2string(args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr())};
+        value ret{value::vecObject{}, rex::vecMethods::getMethodsCxt()};
+        std::error_code ec;
+        for (auto &i: std::filesystem::directory_iterator(filePath, ec)) {
+            if (ec)
+                throw signalException{
+                        interpreter::makeErr(L"fsError",
+                                             L"Unable to list directory: [Errno " + std::to_wstring(ec.value()) + L"]" +
+                                             string2wstring(ec.message()))};
+
+            ret.getVec().push_back(
+                    managePtr((value{string2wstring(i.path().filename()), rex::stringMethods::getMethodsCxt()})));
+        }
+        return ret;
+    }
+
+    nativeFn(realpath, interpreter, args, _) {
+        vbytes filePath{wstring2string(args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr())};
+        std::error_code ec;
+        if (auto res = std::filesystem::absolute(filePath, ec); ec)
+            throw signalException{
+                    interpreter::makeErr(L"fsError",
+                                         L"Unable to resolve real path: [Errno " + std::to_wstring(ec.value()) + L"]" +
+                                         string2wstring(ec.message()))};
+        else
+            return {string2wstring(res), rex::stringMethods::getMethodsCxt()};
     }
 }

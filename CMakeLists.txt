@@ -11,6 +11,6 @@ include(${REX_SRC_DIR}/rex.cmake)
 
 file(GLOB REX_STDLIB_SRC std/*.cpp)
 
-add_library(stdlib SHARED ${REX_STDLIB_SRC} ${REX_SRC})
+add_library(std SHARED ${REX_STDLIB_SRC} ${REX_SRC})
 
 add_executable(test main.cpp ${REX_SRC})

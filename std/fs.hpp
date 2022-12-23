@@ -40,6 +40,14 @@ namespace rexStd::fs {
 
     nativeFn(mkdirs, interpreter, args, _);
 
+    nativeFn(remove, interpreter, args, _);
+
+    nativeFn(removeAll, interpreter, args, _);
+
+    nativeFn(listDir, interpreter, args, _);
+
+    nativeFn(realpath, interpreter, args, _);
+
     value::cxtObject getMethodsCxt();
 }
 
