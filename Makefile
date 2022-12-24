@@ -14,3 +14,14 @@ build_prod:
 
 clean_prod:
 	cd cmake-build-release; make clean
+
+
+dist: cmake build
+	mkdir dist
+	cp cmake-build-debug/*libstd* dist/
+	cp rex/* dist/
+
+dist_prod: cmake_prod build_prod
+	mkdir dist
+	cp cmake-build-debug/*libstd* dist/
+	cp rex/* dist/

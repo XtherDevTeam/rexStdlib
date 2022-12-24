@@ -20,20 +20,14 @@ jobs:
       - name: Configure Git Submodules
         run: git submodule init; git submodule update
 
-      - name: Configure CMake
-        run: make cmake_prod
-
       - name: Build
-        run: make build_prod
-
-      - name: Remove useless files
-        run: find ${{github.workspace}}/cmake-build-release -type f ! -name "*.so*" -delete
+        run: make dist_prod
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
           name: linux-amd64-build
-          path: ${{github.workspace}}/cmake-build-release
+          path: ${{github.workspace}}/dist
 
   build-windows:
     runs-on: windows-latest
@@ -48,16 +42,13 @@ jobs:
         run: make cmake_prod
 
       - name: Build
-        run: make build_prod
-
-      - name: Remove useless files
-        run: dir ${{github.workspace}}/cmake-build-release | where {$_. name -notlike '*.dll*'} | Remove-Item -Recurse -force
+        run: make dist_prod
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
           name: windows-amd64-build
-          path: ${{github.workspace}}/cmake-build-release
+          path: ${{github.workspace}}/dist
 
   build-macos:
     runs-on: macos-latest
@@ -68,17 +59,11 @@ jobs:
       - name: Configure Git Submodules
         run: git submodule init; git submodule update
 
-      - name: Configure CMake
-        run: make cmake_prod
-
       - name: Build
-        run: make build_prod
-
-      - name: Remove useless files
-        run: find ${{github.workspace}}/cmake-build-release -type f ! -name "*.dylib*" -delete
+        run: make dist_prod
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
           name: macos-amd64-build
-          path: ${{github.workspace}}/cmake-build-release
+          path: ${{github.workspace}}/dist
