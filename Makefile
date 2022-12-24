@@ -23,5 +23,5 @@ dist: cmake build
 
 dist_prod: cmake_prod build_prod
 	mkdir dist
-	cp cmake-build-debug/*libstd* dist/
+	cp cmake-build-release/*libstd* dist/
 	cp rex/* dist/
