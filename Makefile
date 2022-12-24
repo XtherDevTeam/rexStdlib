@@ -1,5 +1,6 @@
 cmake:
 	cmake . -B cmake-build-debug  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=DEBUG -G "Unix Makefiles"
+
 build:
 	cd cmake-build-debug; make all -j4
 
@@ -14,7 +15,6 @@ build_prod:
 
 clean_prod:
 	cd cmake-build-release; make clean
-
 
 dist: cmake build
 	mkdir dist

@@ -1,9 +1,5 @@
 let loader = lambda() -> (pkgRoot, mod) {
-    if (rexPlatform == "win32") {
-        mod = nativeImport(pkgRoot + "/libstd.dll");
-    } else if (rexPlatform == "linux") {
-        mod = nativeImport(pkgRoot + "/libstd.so");
-    } else if (rexPlatform == "darwin") {
-        mod = nativeImport(pkgRoot + "/libstd.dylib");
-    }
+    // 将libstd "挂载" 到 mod
+    mod = nativeImport(format("${str}/libstd.${str}", pkgRoot, rexDylibSuffix));
+    mod.zipfile = nativeImport(format("${str}/libstd_zipfile.${str}", pkgRoot, rexDylibSuffix));
 };

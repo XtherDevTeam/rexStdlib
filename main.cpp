@@ -1,6 +1,9 @@
 #include <iostream>
 
+#include <rex.hpp>
+
 int main() {
-    std::cout << "Hello, World!" << std::endl;
+    auto env = rex::getRexEnvironment();
+    auto mod = rex::importNativeModuleEx(env, L"../dist/libstd_zipfile.dylib");
     return 0;
 }
