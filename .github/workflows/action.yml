@@ -27,7 +27,7 @@ jobs:
         run: make build_prod
 
       - name: Remove useless files
-        run: find ${{github.workspace}}/cmake-build-release -type f ! -name "*.sp*" -delete
+        run: find ${{github.workspace}}/cmake-build-release -type f ! -name "*.so*" -delete
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v3.1.0
