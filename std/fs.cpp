@@ -6,6 +6,7 @@
 
 #include "fs.hpp"
 #include "exceptions/signalException.hpp"
+#include "workaround.hpp"
 
 namespace rexStd::fs {
     nativeFn(open, interpreter, args, _) {
@@ -124,6 +125,7 @@ namespace rexStd::fs {
         cxt[L"removeAll"] = managePtr(value{(value::nativeFuncPtr) removeAll});
         cxt[L"listDir"] = managePtr(value{(value::nativeFuncPtr) listDir});
         cxt[L"realpath"] = managePtr(value{(value::nativeFuncPtr) realpath});
+        cxt[L"getFileDir"] = managePtr(value{(value::nativeFuncPtr) getFileDir});
 
         cxt[L"F_OK"] = managePtr(value{(vint) F_OK});
         cxt[L"W_OK"] = managePtr(value{(vint) W_OK});
@@ -264,5 +266,12 @@ namespace rexStd::fs {
                                          string2wstring(ec.message()))};
         else
             return {string2wstring(res), rex::stringMethods::getMethodsCxt()};
+    }
+
+    nativeFn(getFileDir, interpreter, args, _) {
+        vbytes filePath{};
+        std::filesystem::path p(workaround::strToPathType(args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr()));
+
+        return {string2wstring(p.parent_path().string()), rex::stringMethods::getMethodsCxt()};
     }
 }

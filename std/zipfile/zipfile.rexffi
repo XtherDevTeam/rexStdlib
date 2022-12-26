@@ -53,6 +53,11 @@ ffi-exports:
     symbol: zip_entry_write
     params: pZip,vBytesBuf,i64
     result: i32
+
+    name: entryWriteFile
+    symbol: zip_entry_fwrite
+    params: pZip,cStr
+    result: i32
 :end-ffi-exports
 
 ffi-helpers:
@@ -64,4 +69,5 @@ struct cStr {
         return str.data();
     }
 };
+
 :end-ffi-helpers

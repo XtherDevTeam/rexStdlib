@@ -91,3 +91,31 @@
 - Call format: `std.fs.mkdirs(filePath)`
 - Result: `null`
 - Throws: `fsError` if something goes wrong
+
+### std.fs.remove
+
+- Type: function
+- Call format: `std.fs.remove(path)`
+- Result: `null`
+- Throws: `fsError` if something goes wrong
+
+### std.fs.removeAll
+
+- Type: function
+- Call format: `std.fs.removeAll(path)`
+- Result: `null`
+- Throws: `fsError` if something goes wrong
+
+### std.fs.listDir
+
+- Type: function
+- Call format: `std.fs.listDir(path)`
+- Result: `vec` that contains `vstr`
+- Throws: `fsError` if something goes wrong
+
+### std.fs.realpath
+
+- Type: function
+- Call format: `std.fs.realpath(filePath)`
+- Result: `vstr`
+- Throws: `fsError` if something goes wrong

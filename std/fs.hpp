@@ -48,6 +48,8 @@ namespace rexStd::fs {
 
     nativeFn(realpath, interpreter, args, _);
 
+    nativeFn(getFileDir, interpreter, args, _);
+
     value::cxtObject getMethodsCxt();
 }
 
