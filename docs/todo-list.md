@@ -119,3 +119,54 @@
 - Call format: `std.fs.realpath(filePath)`
 - Result: `vstr`
 - Throws: `fsError` if something goes wrong
+
+### std.sqlite.open
+
+- Type: function
+- Call format: `std.sqlite.open(path)`
+- Result: `std.sqlite.database`
+- Throws: `sqliteError` if something goes wrong
+
+### std.sqlite.database.close
+
+- Type: function
+- Call format: `std.sqlite.database.close()`
+- Result: `null`
+- Throws: `sqliteError` if something goes wrong
+
+### std.sqlite.database.execute
+
+- Type: function
+- Call format: `std.sqlite.database.execute(sqlStmt, callback)`
+- Result: `null`
+- Callback format: `func(isErr, data) -> null`
+- Notes: DO NOT THROW ANY EXCEPTIONS IN THE CALLBACK FUNCTION!!!
+- Throws: None
+
+### std.sqlite.database.executeScript
+
+- Type: function
+- Call format: `std.sqlite.database.executeScript(sqlStmts)`
+- Result: `null`
+- Throws: `sqliteError` if something goes wrong
+
+### std.sqlite.database.begin
+
+- Type: function
+- Call format: `std.sqlite.database.begin()`
+- Result: `null`
+- Throws: `sqliteError` if something goes wrong
+
+### std.sqlite.database.commit
+
+- Type: function
+- Call format: `std.sqlite.database.commit()`
+- Result: `null`
+- Throws: `sqliteError` if something goes wrong
+
+### std.sqlite.database.rollback
+
+- Type: function
+- Call format: `std.sqlite.database.rollback()`
+- Result: `null`
+- Throws: `sqliteError` if something goes wrong

@@ -6,6 +6,7 @@
 #define REXSTDLIB_STD_HPP
 
 #include "fs.hpp"
+#include "sqlite.hpp"
 
 using namespace rex;
 

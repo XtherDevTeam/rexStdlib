@@ -1,6 +1,6 @@
 # rexStdlib: The standard library of reXscript
 
-Implemented: `std.fs`
+Implemented: `std.fs` `std.sqlite`
 Untested: `std.zipfile`
 Not-implemented: `std.os`
 
