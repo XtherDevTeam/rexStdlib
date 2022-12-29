@@ -62,7 +62,7 @@ namespace rexStd::sqlite {
 
             sqlite3_stmt *stmt;
             // parse sqlite3 statement
-            if (sqlite3_prepare_v2(db, script.c_str(), -1, &stmt, 0)) {
+            if (sqlite3_prepare_v2(db, script.c_str(), script.length(), &stmt, 0)) {
                 auto e = interpreter::makeErr(L"sqliteError", string2wstring(sqlite3_errmsg(db)));
                 sqlite3_close(db);
                 throw signalException(e);
@@ -106,6 +106,8 @@ namespace rexStd::sqlite {
                     }
                 }
             }
+
+            sqlite3_finalize(stmt);
 
             return receivedContent;
         }
