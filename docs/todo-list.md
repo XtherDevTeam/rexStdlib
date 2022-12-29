@@ -137,11 +137,9 @@
 ### std.sqlite.database.execute
 
 - Type: function
-- Call format: `std.sqlite.database.execute(sqlStmt, callback)`
-- Result: `null`
-- Callback format: `func(isErr, data) -> null`
-- Notes: DO NOT THROW ANY EXCEPTIONS IN THE CALLBACK FUNCTION!!!
-- Throws: None
+- Call format: `std.sqlite.database.execute(sqlStmt)`
+- Result: `vec` that contains objects of each column
+- Throws: `sqliteError` if something goes wrong
 
 ### std.sqlite.database.executeScript
 

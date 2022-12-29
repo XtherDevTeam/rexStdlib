@@ -11,20 +11,7 @@
 namespace rexStd::sqlite {
     using namespace rex;
 
-    struct callbackMsgT {
-        managedPtr<value> moduleCxt;
-        managedPtr<value> callbackFunc;
-        sqlite3_stmt *stmt;
-        value received;
-    };
-
-    // now you don't need to define it again
-    inline map<vint, callbackMsgT> callbackTasks;
-
-    inline vint callbackTaskCnt{1};
-
     static int callback(void *cbMsg, int argc, char **argv, char **azColName);
-
 
     nativeFn(open, interpreter, args, passThisPtr);
 

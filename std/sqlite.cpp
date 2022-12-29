@@ -24,51 +24,8 @@ namespace rexStd::sqlite {
         return result;
     }
 
-    int callback(void *cbMsg, int argc, char **argv, char **azColName) {
-        if (cbMsg) {
-            auto taskId = (vint) cbMsg;
-            callbackTasks[taskId].received = {value::vecObject{}, rex::vecMethods::getMethodsCxt()};
-            callbackTasks[taskId].received.getVec().push_back(managePtr(value{value::cxtObject{}}));
-            auto line = callbackTasks[taskId].received.getVec().back();
-            // parse this callback
-            for (int i = 0; i < argc; i++) {
-                auto &toInsert = line->members[string2wstring(azColName[i])];
-                char *rhs = argv[i];
-                int type = sqlite3_column_type(callbackTasks[taskId].stmt, i);
-                // covert sqlite data structures to rex::value
-                switch (type) {
-                    case SQLITE_INTEGER: {
-                        toInsert = managePtr(value{(vint) atoi(rhs)});
-                        break;
-                    }
-                    case SQLITE_FLOAT: {
-                        toInsert = managePtr(value{(vdeci) atof(rhs)});
-                        break;
-                    }
-                    case SQLITE_TEXT: {
-                        // covert to vbytes object directly, user can use `val.decode('charset')` to decode it.
-                        toInsert = managePtr(value{rhs, rex::bytesMethods::getMethodsCxt()});
-                        break;
-                    }
-                    case SQLITE_BLOB: {
-                        int len = sqlite3_column_bytes(callbackTasks[taskId].stmt, i);
-                        toInsert = managePtr(value{vbytes(), rex::bytesMethods::getMethodsCxt()});
-                        toInsert->getBytes().resize(len);
-                        memcpy(toInsert->getBytes().data(), rhs, len);
-                        break;
-                    }
-                    case SQLITE_NULL:
-                    default: {
-                        // make clang-tidy happy :-)
-                        toInsert = managePtr(value{});
-                        break;
-                    }
-                }
-            }
-            return 0;
-        } else {
-            return 0;
-        }
+    static int callback(void *cbMsg, int argc, char **argv, char **azColName) {
+        return 0;
     }
 
     namespace database {
@@ -98,62 +55,59 @@ namespace rexStd::sqlite {
         }
 
         nativeFn(execute, interpreter, args, passThisPtr) {
-            auto in = static_cast<rex::interpreter *>(interpreter);
             auto db = (sqlite3 *) passThisPtr->members[L"__database__"]->basicValue.unknown;
             auto script = wstring2string(args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr());
-            auto taskId = callbackTaskCnt++;
-            char *errMsg;
+
+            value receivedContent = {value::vecObject{}, rex::vecMethods::getMethodsCxt()};
 
             sqlite3_stmt *stmt;
             // parse sqlite3 statement
             if (sqlite3_prepare_v2(db, script.c_str(), -1, &stmt, 0)) {
-                try {
-                    in->invokeFunc(callbackTasks[taskId].callbackFunc,
-                                   {true,
-                                    value{string2wstring(sqlite3_errmsg(db)), rex::stringMethods::getMethodsCxt()}},
-                                   {});
-                    callbackTasks.erase(taskId);
-                    return {};
-                } catch (...) {
-                    // 防止有傻逼他妈的天天搁着throw，先释放资源
-                    callbackTasks.erase(taskId);
-                    throw;
+                auto e = interpreter::makeErr(L"sqliteError", string2wstring(sqlite3_errmsg(db)));
+                sqlite3_close(db);
+                throw signalException(e);
+            }
+
+            while (sqlite3_step(stmt) == SQLITE_ROW) {
+                receivedContent.getVec().push_back(managePtr(value{value::cxtObject{}}));
+                auto line = receivedContent.getVec().back();
+
+                int count = sqlite3_column_count(stmt);
+                for (int i = 0;i < count;i++) {
+                    auto &toInsert = line->members[string2wstring(sqlite3_column_name(stmt, i))];
+                    int type = sqlite3_column_type(stmt, i);
+                    switch (type) {
+                        case SQLITE_INTEGER: {
+                            toInsert = managePtr(value{(vint)sqlite3_column_int(stmt, i)});
+                            break;
+                        }
+                        case SQLITE_FLOAT: {
+                            toInsert = managePtr(value{(vdeci) sqlite3_column_double(stmt, i)});
+                            break;
+                        }
+                        case SQLITE_TEXT: {
+                            // covert to vbytes object directly, user can use `val.decode('charset')` to decode it.
+                            toInsert = managePtr(value{(char*)sqlite3_column_text(stmt, i), rex::bytesMethods::getMethodsCxt()});
+                            break;
+                        }
+                        case SQLITE_BLOB: {
+                            int len = sqlite3_column_bytes(stmt, i);
+                            toInsert = managePtr(value{vbytes(), rex::bytesMethods::getMethodsCxt()});
+                            toInsert->getBytes().resize(len);
+                            memcpy(toInsert->getBytes().data(), sqlite3_column_blob(stmt, i), len);
+                            break;
+                        }
+                        case SQLITE_NULL:
+                        default: {
+                            // make clang-tidy happy :-)
+                            toInsert = managePtr(value{});
+                            break;
+                        }
+                    }
                 }
             }
 
-            callbackTasks[taskId] = {
-                    in->moduleCxt,
-                    args[1].isRef() ? args[1].refObj : managePtr(args[1]),
-                    stmt,
-                    {}
-            };
-
-            if (sqlite3_exec(db, script.c_str(), callback, (void *) taskId, &errMsg)) {
-                try {
-                    in->invokeFunc(callbackTasks[taskId].callbackFunc,
-                                   {true, value{string2wstring(errMsg), rex::stringMethods::getMethodsCxt()}},
-                                   {});
-                    sqlite3_free(errMsg);
-                    callbackTasks.erase(taskId);
-                    return {};
-                } catch (...) {
-                    // 防止有傻逼他妈的天天搁着throw，先释放资源
-                    callbackTasks.erase(taskId);
-                    throw;
-                }
-            } else {
-                try {
-                    in->invokeFunc(callbackTasks[taskId].callbackFunc,
-                                   {false, callbackTasks[taskId].received},
-                                   {});
-                    callbackTasks.erase(taskId);
-                    return {};
-                } catch (...) {
-                    // 防止有傻逼他妈的天天搁着throw，先释放资源
-                    callbackTasks.erase(taskId);
-                    throw;
-                }
-            }
+            return receivedContent;
         }
 
         nativeFn(begin, interpreter, args, passThisPtr) {
