@@ -67,17 +67,41 @@ namespace rexStd::sqlite {
                 throw signalException(e);
             }
 
+            // insert values
+            for (int i = 1; i < args.size(); i++) {
+                auto &element = args[i].isRef() ? args[i].getRef() : args[i];
+                switch (element.kind) {
+                    case rex::value::vKind::vInt:
+                        sqlite3_bind_int(stmt, i, (int) element.getInt());
+                        break;
+                    case rex::value::vKind::vDeci:
+                        sqlite3_bind_double(stmt, i, element.getDeci());
+                        break;
+                    case rex::value::vKind::vStr: {
+                        vbytes str = wstring2string(element.getStr());
+                        sqlite3_bind_text(stmt, i, str.data(), (int) str.length(), SQLITE_TRANSIENT);
+                        break;
+                    }
+                    case rex::value::vKind::vBytes: {
+                        sqlite3_bind_blob(stmt, i, element.getBytes().data(), (int) element.getBytes().size(), SQLITE_TRANSIENT);
+                        break;
+                    }
+                    default:
+                        throw signalException(interpreter::makeErr(L"sqliteError", L"invalid value to bind"));
+                }
+            }
+
             while (sqlite3_step(stmt) == SQLITE_ROW) {
                 receivedContent.getVec().push_back(managePtr(value{value::cxtObject{}}));
                 auto line = receivedContent.getVec().back();
 
                 int count = sqlite3_column_count(stmt);
-                for (int i = 0;i < count;i++) {
+                for (int i = 0; i < count; i++) {
                     auto &toInsert = line->members[string2wstring(sqlite3_column_name(stmt, i))];
                     int type = sqlite3_column_type(stmt, i);
                     switch (type) {
                         case SQLITE_INTEGER: {
-                            toInsert = managePtr(value{(vint)sqlite3_column_int(stmt, i)});
+                            toInsert = managePtr(value{(vint) sqlite3_column_int(stmt, i)});
                             break;
                         }
                         case SQLITE_FLOAT: {
@@ -86,7 +110,8 @@ namespace rexStd::sqlite {
                         }
                         case SQLITE_TEXT: {
                             // covert to vbytes object directly, user can use `val.decode('charset')` to decode it.
-                            toInsert = managePtr(value{(char*)sqlite3_column_text(stmt, i), rex::bytesMethods::getMethodsCxt()});
+                            toInsert = managePtr(
+                                    value{(char *) sqlite3_column_text(stmt, i), rex::bytesMethods::getMethodsCxt()});
                             break;
                         }
                         case SQLITE_BLOB: {
