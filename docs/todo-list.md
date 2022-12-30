@@ -120,6 +120,13 @@
 - Result: `vstr`
 - Throws: `fsError` if something goes wrong
 
+### std.fs.copy
+
+- Type: function
+- Call format: `std.fs.copy(src, dest)`
+- Result: `null`
+- Throws: `fsError` if something goes wrong
+
 ### std.sqlite.open
 
 - Type: function

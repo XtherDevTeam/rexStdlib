@@ -126,6 +126,7 @@ namespace rexStd::fs {
         cxt[L"listDir"] = managePtr(value{(value::nativeFuncPtr) listDir});
         cxt[L"realpath"] = managePtr(value{(value::nativeFuncPtr) realpath});
         cxt[L"getFileDir"] = managePtr(value{(value::nativeFuncPtr) getFileDir});
+        cxt[L"copy"] = managePtr(value{(value::nativeFuncPtr) copy});
 
         cxt[L"F_OK"] = managePtr(value{(vint) F_OK});
         cxt[L"W_OK"] = managePtr(value{(vint) W_OK});
@@ -273,5 +274,21 @@ namespace rexStd::fs {
         std::filesystem::path p(workaround::strToPathType(args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr()));
 
         return {string2wstring(p.parent_path().string()), rex::stringMethods::getMethodsCxt()};
+    }
+
+    nativeFn(copy, interpreter, args, _) {
+        vbytes filePath{};
+        std::error_code ec;
+        std::filesystem::path src(workaround::strToPathType(args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr()));
+        std::filesystem::path dest(workaround::strToPathType(args[1].isRef() ? args[1].getRef().getStr() : args[1].getStr()));
+        std::filesystem::copy(src, dest, std::filesystem::copy_options::recursive, ec);
+        if (ec) {
+            throw signalException{
+                    interpreter::makeErr(L"fsError",
+                                         L"Unable to copy files: [Errno " + std::to_wstring(ec.value()) + L"]" +
+                                         string2wstring(ec.message()))};
+        } else {
+            return {};
+        }
     }
 }
