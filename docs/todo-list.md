@@ -127,6 +127,12 @@
 - Result: `null`
 - Throws: `fsError` if something goes wrong
 
+# libsqlite
+
+- Where: `std.sqlite`
+
+## Methods and members
+
 ### std.sqlite.open
 
 - Type: function
@@ -175,3 +181,96 @@
 - Call format: `std.sqlite.database.rollback()`
 - Result: `null`
 - Throws: `sqliteError` if something goes wrong
+
+# libnet
+
+- Where: `std.net`
+
+## Methods and members
+
+### std.net.resolve
+
+- Type: function
+- Call format: `std.net.resolve(url)`
+- Result: `str` that contains the ip address
+- Throws: `netError` if something goes wrong
+
+### std.net.socket
+
+- Type: function
+- Call format: `std.net.socket()`
+- Result: `socket` object
+- Throws: `netError` if something goes wrong
+
+### std.net.socket.connect
+
+- Type: function
+- Call format: `std.net.socket.connect(ip, port)`
+- Result: `null`
+- Throws: `netError` if something goes wrong
+
+### std.net.socket.close
+
+- Type: function
+- Call format: `std.net.socket.close()`
+- Result: `null`
+- Throws: `netError` if something goes wrong
+
+### std.net.socket.bind
+
+- Type: function
+- Call format: `std.net.socket.bind(ip, port)`
+- Result: `null`
+- Throws: `netError` if something goes wrong
+
+### std.net.socket.listen
+
+- Type: function
+- Call format: `std.net.socket.listen(backlog)`
+- Result: `null`
+- Throws: `netError` if something goes wrong
+
+### std.net.socket.accept
+
+- Type: function
+- Call format: `std.net.socket.accept()`
+- Result: `socket` object of client
+- Throws: `netError` if something goes wrong
+
+### std.net.socket.send
+
+- Type: function
+- Call format: `std.net.socket.send(data)`
+- Result: `null`
+- Throws: `netError` if something goes wrong
+
+### std.net.socket.recv
+
+- Type: function
+- Call format: `std.net.socket.recv(size)`
+- Result: `vbytes` that contains received data
+- Throws: `netError` if something goes wrong
+
+### std.net.socket.setSendFlags
+
+- Type: function
+- Call format: `std.net.socket.setSendFlags(flag)`
+- Result: `null`
+
+### std.net.socket.getSendFlags
+
+- Type: function
+- Call format: `std.net.socket.getSendFlags()`
+- Result: `vint`
+
+### std.net.socket.setRecvFlags
+
+- Type: function
+- Call format: `std.net.socket.setRecvFlags(flag)`
+- Result: `null`
+
+### std.net.socket.getRecvFlags
+
+- Type: function
+- Call format: `std.net.socket.getRecvFlags()`
+- Result: `vint`
