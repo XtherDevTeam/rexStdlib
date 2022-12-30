@@ -5,10 +5,15 @@
 #ifndef REXSTDLIB_SOCKET_HPP
 #define REXSTDLIB_SOCKET_HPP
 
+#include <set>
 #include <string>
+#include <cstring>
+#include "unistd.h"
 
 #ifdef _WIN32
 #include <winsock2.h>
+#include <ws2tcpip.h>
+
 struct __WSAINIT {
     __WSAINIT () {
         WSADATA wsa_data;
@@ -19,16 +24,19 @@ struct __WSAINIT {
         WSACleanup();
     }
 } ___WSAINIT;
+
+#define inet_aton(a,b) inet_pton(AF_INET, (a), (b))
+#define close_socket closesocket
 #else
 
-#include <set>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
-#include "unistd.h"
 
 #define close_socket close
+
+#endif
 
 struct socketStartup {
     std::shared_ptr<std::set<int>> fdSet;
@@ -37,14 +45,12 @@ struct socketStartup {
         fdSet = std::make_shared<std::set<int>>();
     }
 
-    ~socketStartup () {
-        for (auto &i : *fdSet)
+    ~socketStartup() {
+        for (auto &i: *fdSet)
             close_socket(i);
         fdSet->clear();
     }
-} _socketStartup;
-
-#endif
+} socketStartupInstance;
 
 namespace libnet {
     // Parse the given domain name and return the resolved IP address as a string
@@ -70,14 +76,14 @@ namespace libnet {
         freeaddrinfo(addr_list);
 
         // Return the resolved IP address
-        return {ip_str};
+        return {(char *) ip_str};
     }
 
     int socket() {
         if (auto result = ::socket(AF_INET, SOCK_STREAM, 0); result < 0) {
             throw std::runtime_error("libnet: error creating socket");
         } else {
-            _socketStartup.fdSet->insert(result);
+            socketStartupInstance.fdSet->insert(result);
             return result;
         }
     }
@@ -114,7 +120,7 @@ namespace libnet {
 
     int socketAccept(int fd, struct sockaddr_in &clientAddr, socklen_t &clientAddrLen) {
         if (auto nfd = accept(fd, (struct sockaddr *) &clientAddr, &clientAddrLen); nfd < -1) {
-            _socketStartup.fdSet->insert(nfd);
+            socketStartupInstance.fdSet->insert(nfd);
             throw std::runtime_error("libnet: error accepting incoming connection");
         } else {
             return nfd;
@@ -135,7 +141,7 @@ namespace libnet {
 
     void socketClose(int fd) {
         close_socket(fd);
-        _socketStartup.fdSet->erase(fd);
+        socketStartupInstance.fdSet->erase(fd);
     }
 }
 
