@@ -138,6 +138,8 @@ namespace libnet {
             throw std::runtime_error("libnet: error receiving message");
         } else if (res == 0) {
             buf = {};
+        } else {
+            buf.resize(res);
         }
     }
 
