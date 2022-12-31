@@ -7,6 +7,7 @@
 
 #include "fs.hpp"
 #include "sqlite.hpp"
+#include "net.hpp"
 
 using namespace rex;
 

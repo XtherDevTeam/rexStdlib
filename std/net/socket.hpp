@@ -134,8 +134,10 @@ namespace libnet {
     }
 
     void socketRecv(int fd, std::string &buf, int recvFlag = 0) {
-        if (recv(fd, buf.data(), buf.size(), recvFlag) < 0) {
+        if (auto res = recv(fd, buf.data(), buf.size(), recvFlag) ; res < 0) {
             throw std::runtime_error("libnet: error receiving message");
+        } else if (res == 0) {
+            buf = {};
         }
     }
 
