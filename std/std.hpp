@@ -8,6 +8,7 @@
 #include "fs.hpp"
 #include "sqlite.hpp"
 #include "net.hpp"
+#include "json.hpp"
 
 using namespace rex;
 

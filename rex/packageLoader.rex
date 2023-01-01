@@ -3,3 +3,4 @@ let zipfile = require(format("${str}/libstd_zipfile.${str}", rexPkgRoot, rexDyli
 let fs = __module__.fs;
 let sqlite = __module__.sqlite;
 let net = __module__.net;
+let json = __module__.json;
