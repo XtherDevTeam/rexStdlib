@@ -195,11 +195,33 @@ namespace rexStd::net {
                     }
                 }
             });
+            return result;
+        }
+
+        nativeFn(parseUrl, interpreter, args, passThisPtr) {
+            vstr url = args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr();
+            if (auto it = url.find(L"://"); it != vstr::npos) {
+                vstr protocol = url.substr(0, it);
+                vstr host = url.substr(it + 3);
+                vstr target{L"/"};
+                if (auto vit = host.find(L'/'); vit != vstr::npos) {
+                    target = host.substr(vit);
+                    host = host.substr(0, vit);
+                }
+                return {value::cxtObject{
+                        {L"protocol", managePtr(value{protocol, rex::stringMethods::getMethodsCxt()})},
+                        {L"host", managePtr(value{host, rex::stringMethods::getMethodsCxt()})},
+                        {L"target", managePtr(value{target, rex::stringMethods::getMethodsCxt()})},
+                }};
+            } else {
+                throw signalException(interpreter::makeErr(L"httpError", L"invalid url"));
+            }
         }
 
         value::cxtObject getMethodsCxt() {
             value::cxtObject result;
             result[L"parseHttpHeader"] = managePtr(value{value::nativeFuncPtr{parseHttpHeader}});
+            result[L"parseUrl"] = managePtr(value{value::nativeFuncPtr{parseUrl}});
             return result;
         }
     }

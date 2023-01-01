@@ -282,6 +282,13 @@
 - Result: `vObject` that contains the parsed headers.
 - Throws: `httpError` if something goes wrong
 
+### std.net.http.parseUrl
+
+- Type: function
+- Call format: `std.net.http.parseUrl(url)`
+- Result: `vObject` that contains the components of url like `protocol`, `host`, `target`.
+- Throws: `httpError` if something goes wrong
+
 ### std.net.ssl.sslContext
 
 - Type: function
