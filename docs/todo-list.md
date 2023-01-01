@@ -281,3 +281,17 @@
 - Call format: `std.net.http.parseHttpHeaders(headers)`
 - Result: `vObject` that contains the parsed headers.
 - Throws: `httpError` if something goes wrong
+
+### std.net.ssl.sslContext
+
+- Type: function
+- Call format: `std.net.ssl.sslContext(mode)`
+- Result: `vObject` that contains the ssl context.
+- Throws: `sslError` if something goes wrong
+
+### std.net.ssl.sslContext.wrapSocket
+
+- Type: function
+- Call format: `std.net.ssl.sslContext.wrapSocket(socket)`
+- Result: `vObject` that contains the wrapped socket.
+- Throws: `sslError` if something goes wrong
