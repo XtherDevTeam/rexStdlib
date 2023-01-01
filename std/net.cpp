@@ -162,7 +162,7 @@ namespace rexStd::net {
     namespace http {
         nativeFn(parseHttpHeader, interpreter, args, passThisPtr) {
             value result{};
-            result.members[L"sections"] = managePtr(globalMethods::hashMap(interpreter, {}, passThisPtr));
+            result.members[L"sections"] = managePtr(value{value::cxtObject{}});
 
             vstr &headers = args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr();
             split(headers, vstr{L"\r\n"}, [&](const vstr &line, vsize index) {
@@ -170,10 +170,8 @@ namespace rexStd::net {
                     if (auto it = line.find(L": "); it != vstr::npos) {
                         vstr first = line.substr(0, it);
                         vstr second = line.substr(it + 2);
-                        hashMapMethods::insert(interpreter, {
-                                {first,  rex::stringMethods::getMethodsCxt()},
-                                {second, rex::stringMethods::getMethodsCxt()},
-                        }, result.members[L"sections"]);
+                        result.members[L"sections"]->members[first] = managePtr(
+                                value{second, rex::stringMethods::getMethodsCxt()});
                     } else {
                         throw signalException(interpreter::makeErr(L"httpError", L"invalid headers"));
                     }
@@ -185,6 +183,7 @@ namespace rexStd::net {
                                 value{line.substr(5, 3), rex::stringMethods::getMethodsCxt()});
                         result.members[L"statusCode"] = managePtr(value{(vint) std::stol(line.substr(9, 3))});
                         result.members[L"statusText"] = managePtr(value{(vint) std::stol(line.substr(13))});
+                        result.members[L"type"] = managePtr(value{L"response", rex::stringMethods::getMethodsCxt()});
                     } else {
                         // request
                         vec<vstr> res;
@@ -193,6 +192,7 @@ namespace rexStd::net {
                         result.members[L"target"] = managePtr(value{res[1], rex::stringMethods::getMethodsCxt()});
                         result.members[L"version"] = managePtr(
                                 value{res[2].substr(5), rex::stringMethods::getMethodsCxt()});
+                        result.members[L"type"] = managePtr(value{L"request", rex::stringMethods::getMethodsCxt()});
                     }
                 }
             });
@@ -225,7 +225,7 @@ namespace rexStd::net {
                         {L"protocol", managePtr(value{protocol, rex::stringMethods::getMethodsCxt()})},
                         {L"host",     managePtr(value{host, rex::stringMethods::getMethodsCxt()})},
                         {L"target",   managePtr(value{target, rex::stringMethods::getMethodsCxt()})},
-                        {L"port",   port}
+                        {L"port",     port}
                 }};
             } else {
                 throw signalException(interpreter::makeErr(L"httpError", L"invalid url"));
