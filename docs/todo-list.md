@@ -286,8 +286,9 @@
 
 - Type: function
 - Call format: `std.net.http.parseUrl(url)`
-- Result: `vObject` that contains the components of url like `protocol`, `host`, `target`.
+- Result: `vObject` that contains the components of url like `protocol`, `host`, `target` and `port`.
 - Throws: `httpError` if something goes wrong
+- Notes: If the url didn't provide port number, the field of `port` will be `null`.
 
 ### std.net.ssl.sslContext
 

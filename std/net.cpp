@@ -205,14 +205,27 @@ namespace rexStd::net {
                 vstr protocol = url.substr(0, it);
                 vstr host = url.substr(it + 3);
                 vstr target{L"/"};
+                managedPtr<value> port;
                 if (auto vit = host.find(L'/'); vit != vstr::npos) {
                     target = host.substr(vit);
                     host = host.substr(0, vit);
                 }
+                if (auto vit = host.find(L':'); vit != vstr::npos) {
+                    try {
+                        port = managePtr(value{(vint) (std::stol(host.substr(vit + 1)))});
+                        if (port->getInt() > 65535)
+                            throw signalException(interpreter::makeErr(L"httpError", L"invalid port number"));
+                    } catch (const std::invalid_argument &ex) {
+                        throw signalException(interpreter::makeErr(L"httpError", L"invalid port number"));
+                    }
+                } else {
+                    port = managePtr(value{});
+                }
                 return {value::cxtObject{
                         {L"protocol", managePtr(value{protocol, rex::stringMethods::getMethodsCxt()})},
-                        {L"host", managePtr(value{host, rex::stringMethods::getMethodsCxt()})},
-                        {L"target", managePtr(value{target, rex::stringMethods::getMethodsCxt()})},
+                        {L"host",     managePtr(value{host, rex::stringMethods::getMethodsCxt()})},
+                        {L"target",   managePtr(value{target, rex::stringMethods::getMethodsCxt()})},
+                        {L"port",   port}
                 }};
             } else {
                 throw signalException(interpreter::makeErr(L"httpError", L"invalid url"));
