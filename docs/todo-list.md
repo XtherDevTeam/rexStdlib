@@ -274,3 +274,10 @@
 - Type: function
 - Call format: `std.net.socket.getRecvFlags()`
 - Result: `vint`
+
+### std.net.http.parseHttpHeaders
+
+- Type: function
+- Call format: `std.net.http.parseHttpHeaders(headers)`
+- Result: `vObject` that contains the parsed headers.
+- Throws: `httpError` if something goes wrong
