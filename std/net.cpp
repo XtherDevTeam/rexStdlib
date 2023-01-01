@@ -27,6 +27,7 @@ namespace rexStd::net {
         value::cxtObject cxt;
         cxt[L"resolve"] = managePtr(value{value::nativeFuncPtr{resolve}});
         cxt[L"socket"] = managePtr(value{value::nativeFuncPtr{rexSocket}});
+        cxt[L"http"] = managePtr(value{http::getMethodsCxt()});
         return cxt;
     }
 
