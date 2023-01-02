@@ -290,12 +290,20 @@
 - Throws: `httpError` if something goes wrong
 - Notes: If the url didn't provide port number, the field of `port` will be `null`.
 
+### std.net.http.generateHttpHeader
+
+- Type: function
+- Call format: `std.net.http.generateHttpHeader(headers)`
+- Result: `vstr` that contains the headers
+- Throws: `httpError` if something goes wrong
+
 ### std.net.http.send
 
 - Type: function
 - Call format: `std.net.http.send(method, url)`
-- Result: `vObject` that contains the response.
+- Result: `vObject` that contains the request.
 - Throws: `httpError` if something goes wrong
+- Notes: use call-chain to set the details of the requests like `.recvAsStream()` `.sendFile()` `.sendJson()` `.callback()`
 
 ### std.net.ssl.sslContext
 

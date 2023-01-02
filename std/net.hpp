@@ -45,6 +45,8 @@ namespace rexStd::net {
 
         nativeFn(parseUrl, interpreter, args, passThisPtr);
 
+        nativeFn(generateHttpHeader, interpreter, args, passThisPtr);
+
         value::cxtObject getMethodsCxt();
     }
 

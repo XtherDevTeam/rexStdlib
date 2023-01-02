@@ -167,6 +167,7 @@ namespace rexStd::net {
             vstr &headers = args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr();
             split(headers, vstr{L"\r\n"}, [&](const vstr &line, vsize index) {
                 if (index) {
+                    if (line.empty()) return;
                     if (auto it = line.find(L": "); it != vstr::npos) {
                         vstr first = line.substr(0, it);
                         vstr second = line.substr(it + 2);
@@ -178,21 +179,30 @@ namespace rexStd::net {
                 } else {
                     // parse the first line
                     if (line.starts_with(L"HTTP/")) {
-                        // response
-                        result.members[L"version"] = managePtr(
-                                value{line.substr(5, 3), rex::stringMethods::getMethodsCxt()});
-                        result.members[L"statusCode"] = managePtr(value{(vint) std::stol(line.substr(9, 3))});
-                        result.members[L"statusText"] = managePtr(value{(vint) std::stol(line.substr(13))});
-                        result.members[L"type"] = managePtr(value{L"response", rex::stringMethods::getMethodsCxt()});
+                        try {
+                            // response
+                            result.members[L"version"] = managePtr(
+                                    value{line.substr(5, 3), rex::stringMethods::getMethodsCxt()});
+                            result.members[L"statusCode"] = managePtr(value{(vint) std::stol(line.substr(9, 3))});
+                            result.members[L"statusText"] = managePtr(value{(vint) std::stol(line.substr(13))});
+                            result.members[L"type"] = managePtr(
+                                    value{L"response", rex::stringMethods::getMethodsCxt()});
+                        } catch (...) {
+                            throw signalException(interpreter::makeErr(L"httpError", L"invalid first line"));
+                        }
                     } else {
-                        // request
-                        vec<vstr> res;
-                        split(line, vstr{L" "}, res);
-                        result.members[L"method"] = managePtr(value{res[0], rex::stringMethods::getMethodsCxt()});
-                        result.members[L"target"] = managePtr(value{res[1], rex::stringMethods::getMethodsCxt()});
-                        result.members[L"version"] = managePtr(
-                                value{res[2].substr(5), rex::stringMethods::getMethodsCxt()});
-                        result.members[L"type"] = managePtr(value{L"request", rex::stringMethods::getMethodsCxt()});
+                        try {
+                            // request
+                            vec<vstr> res;
+                            split(line, vstr{L" "}, res);
+                            result.members[L"method"] = managePtr(value{res[0], rex::stringMethods::getMethodsCxt()});
+                            result.members[L"target"] = managePtr(value{res[1], rex::stringMethods::getMethodsCxt()});
+                            result.members[L"version"] = managePtr(
+                                    value{res[2].substr(5), rex::stringMethods::getMethodsCxt()});
+                            result.members[L"type"] = managePtr(value{L"request", rex::stringMethods::getMethodsCxt()});
+                        } catch (...) {
+                            throw signalException(interpreter::makeErr(L"httpError", L"invalid first line"));
+                        }
                     }
                 }
             });
@@ -232,10 +242,33 @@ namespace rexStd::net {
             }
         }
 
+        nativeFn(generateHttpHeader, interpreter, args, passThisPtr) {
+            value headerObject = args[0].isRef() ? args[0].getRef() : args[0];
+            value result{L"", rex::stringMethods::getMethodsCxt()};
+            if (headerObject[L"type"]->getStr() == L"response") {
+                result.getStr() += L"HTTP/" + headerObject[L"version"]->getStr() + L" " +
+                                   std::to_wstring(headerObject[L"statusCode"]->getInt()) + L" " +
+                                   headerObject[L"statusText"]->getStr() + L"\r\n";
+            } else if (headerObject[L"type"]->getStr() == L"request") {
+                result.getStr() +=
+                        headerObject[L"method"]->getStr() + L" " + headerObject[L"target"]->getStr() + L" HTTP/" +
+                        headerObject[L"version"]->getStr() + L"\r\n";
+            } else {
+                throw signalException(interpreter::makeErr(L"httpError", L"invalid http headers object"));
+            }
+
+            for (auto &section : headerObject[L"sections"]->members) {
+                result.getStr() += section.first + L" " + section.second->getStr() + L"\r\n";
+            }
+            result.getStr() += L"\r\n";
+            return result;
+        }
+
         value::cxtObject getMethodsCxt() {
             value::cxtObject result;
             result[L"parseHttpHeader"] = managePtr(value{value::nativeFuncPtr{parseHttpHeader}});
             result[L"parseUrl"] = managePtr(value{value::nativeFuncPtr{parseUrl}});
+            result[L"generateHttpHeader"] = managePtr(value{value::nativeFuncPtr{generateHttpHeader}});
             return result;
         }
     }
