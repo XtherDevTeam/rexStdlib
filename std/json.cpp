@@ -115,6 +115,9 @@ namespace rexStd::json {
                     pos++;
                 }
                 pos++;
+                std::wistringstream ss{dst.getStr()};
+                dst.getStr().clear();
+                parseString(ss, dst.getStr());
                 break;
             }
             case '0'...'9': {
@@ -167,5 +170,4 @@ namespace rexStd::json {
         }
         return pos;
     }
-
 }
