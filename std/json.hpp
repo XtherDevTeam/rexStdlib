@@ -10,6 +10,8 @@
 namespace rexStd::json {
     using namespace rex;
 
+    vsize loadObjectToJson(const vstr &src, value& dst, vsize pos);
+
     void dumpObjectToJson(rex::interpreter &in, value &v, vstr &dst);
 
     nativeFn(loads, interpreter, args, passThisPtr);
