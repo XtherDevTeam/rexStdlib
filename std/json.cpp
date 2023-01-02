@@ -153,6 +153,17 @@ namespace rexStd::json {
                 }
                 break;
             }
+            case 'n': {
+                vsize cur = pos;
+                while (isalpha(src[pos]))
+                    pos++;
+                if (src.substr(cur, pos - cur) == L"null") {
+                    dst = true;
+                } else {
+                    throw signalException(interpreter::makeErr(L"jsonError", L"invalid values"));
+                }
+                break;
+            }
             case 'f': {
                 vsize cur = pos;
                 while (isalpha(src[pos]))
