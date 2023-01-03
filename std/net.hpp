@@ -41,11 +41,21 @@ namespace rexStd::net {
     }
 
     namespace http {
+        namespace response {
+            nativeFn(recvHeaders, interpreter, args, passThisPtr);
+
+            nativeFn(recv, interpreter, args, passThisPtr);
+
+            value::cxtObject getMethodsCxt(const managedPtr <value> &socketObject, value &requestOptArgs);
+        }
+
         nativeFn(parseHttpHeader, interpreter, args, passThisPtr);
 
         nativeFn(parseUrl, interpreter, args, passThisPtr);
 
         nativeFn(generateHttpHeader, interpreter, args, passThisPtr);
+
+        nativeFn(open, interpreter, args, passThisPtr);
 
         value::cxtObject getMethodsCxt();
     }

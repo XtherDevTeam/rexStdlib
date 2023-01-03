@@ -5,6 +5,8 @@
 #include <exceptions/signalException.hpp>
 #include "net.hpp"
 #include "net/socket.hpp"
+#include "json.hpp"
+#include "fs.hpp"
 
 namespace rexStd::net {
     nativeFn(resolve, interpreter, args, passThisPtr) {
@@ -161,7 +163,7 @@ namespace rexStd::net {
 
     namespace http {
         nativeFn(parseHttpHeader, interpreter, args, passThisPtr) {
-            value result{};
+            value result{value::cxtObject{}};
             result.members[L"sections"] = managePtr(value{value::cxtObject{}});
 
             vstr &headers = args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr();
@@ -184,7 +186,8 @@ namespace rexStd::net {
                             result.members[L"version"] = managePtr(
                                     value{line.substr(5, 3), rex::stringMethods::getMethodsCxt()});
                             result.members[L"statusCode"] = managePtr(value{(vint) std::stol(line.substr(9, 3))});
-                            result.members[L"statusText"] = managePtr(value{(vint) std::stol(line.substr(13))});
+                            result.members[L"statusText"] = managePtr(
+                                    value{line.substr(13), rex::stringMethods::getMethodsCxt()});
                             result.members[L"type"] = managePtr(
                                     value{L"response", rex::stringMethods::getMethodsCxt()});
                         } catch (...) {
@@ -223,6 +226,7 @@ namespace rexStd::net {
                 if (auto vit = host.find(L':'); vit != vstr::npos) {
                     try {
                         port = managePtr(value{(vint) (std::stol(host.substr(vit + 1)))});
+                        host = host.substr(0, vit);
                         if (port->getInt() > 65535)
                             throw signalException(interpreter::makeErr(L"httpError", L"invalid port number"));
                     } catch (const std::invalid_argument &ex) {
@@ -257,11 +261,149 @@ namespace rexStd::net {
                 throw signalException(interpreter::makeErr(L"httpError", L"invalid http headers object"));
             }
 
-            for (auto &section : headerObject[L"sections"]->members) {
+            for (auto &section: headerObject[L"sections"]->members) {
                 result.getStr() += section.first + L" " + section.second->getStr() + L"\r\n";
             }
             result.getStr() += L"\r\n";
             return result;
+        }
+
+        nativeFn(open, interpreter, args, passThisPtr) {
+            auto in = static_cast<rex::interpreter *>(interpreter);
+
+            managedPtr<value> socketObject = managePtr(rexSocket(interpreter, {}, {}));
+
+            vstr method = args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr();
+            value parsedUrl = parseUrl(interpreter, {args[1].isRef() ? args[1].getRef() : args[1]}, passThisPtr);
+            value optionalArgs{value::cxtObject{}};
+            if (args.size() == 3) {
+                optionalArgs = args[2].isRef() ? args[2].getRef() : args[2];
+            }
+
+            // make socket connection
+            // resolve ip
+            value ipAddr = resolve(interpreter, {*parsedUrl[L"host"]}, {});
+            if (parsedUrl[L"protocol"]->getStr() == L"http") {
+                // check and patch the default port in http connection
+                if (parsedUrl[L"port"]->kind == rex::value::vKind::vNull)
+                    *parsedUrl[L"port"] = vint{80};
+
+                in->invokeFunc(socketObject->members[L"connect"], {ipAddr, *parsedUrl[L"port"]}, socketObject);
+            } else {
+                // not implemented: https
+                throw signalException(
+                        interpreter::makeErr(L"httpError", L"Not implemented: 哪个带善人帮忙做一下https啊求求了😭😭😭"));
+            }
+
+            // check and patch the present arguments
+            if (auto it = optionalArgs.members.find(L"stream"); it != optionalArgs.members.end()) {
+                if (it->second->getBool()) {
+                    // check and patch the chunkSize
+                    if (!optionalArgs.members.contains(L"chunkSize")) {
+                        optionalArgs.members[L"chunkSize"] = managePtr(value{(vint) 1048576});
+                    }
+                }
+            } else {
+                optionalArgs.members[L"stream"] = managePtr(value{false});
+            }
+            // patch the `body` content, and get the `Content-Length`, covert them to `vBytes` if they can
+            if (!optionalArgs.members.contains(L"sections"))
+                optionalArgs.members[L"sections"] = managePtr(value{value::cxtObject{}});
+
+            if (!optionalArgs.members[L"sections"]->members.contains(L"User-Agent"))
+                optionalArgs.members[L"sections"]->members[L"User-Agent"] = managePtr(
+                        value{L"reXscriptLibhttp;JerryChou;", rex::stringMethods::getMethodsCxt()});
+
+            if (!optionalArgs.members[L"sections"]->members.contains(L"Host"))
+                optionalArgs.members[L"sections"]->members[L"Host"] = managePtr(*parsedUrl[L"host"]);
+
+            if (!optionalArgs.members.contains(L"body"))
+                // if not exist, make it exists.
+                optionalArgs.members[L"body"] = managePtr(value{});
+            if (!optionalArgs.members.contains(L"chunkSize"))
+                // if not exist, make it exists.
+                optionalArgs.members[L"chunkSize"] = managePtr(value{(vint) 1048576});
+
+            switch (optionalArgs[L"body"]->kind) {
+                case rex::value::vKind::vNull: {
+                    break;
+                }
+                case rex::value::vKind::vBytes: {
+                    optionalArgs[L"sections"]->members[L"Content-Length"] =
+                            managePtr(value{std::to_wstring(optionalArgs[L"body"]->getBytes().size()),
+                                            rex::stringMethods::getMethodsCxt()});
+                    break;
+                }
+                case rex::value::vKind::vStr: {
+                    // covert to bytes
+                    optionalArgs[L"body"] = managePtr(
+                            value{wstring2string(optionalArgs[L"body"]->getStr()), bytesMethods::getMethodsCxt()});
+                    optionalArgs[L"sections"]->members[L"Content-Length"] =
+                            managePtr(value{std::to_wstring(optionalArgs[L"body"]->getBytes().size()),
+                                            rex::stringMethods::getMethodsCxt()});
+                    break;
+                }
+                case rex::value::vKind::vObject: {
+                    // check if this is a file
+                    if (optionalArgs[L"body"]->members.contains(L"rexFile")) {
+                        // no need to covert to vBytes
+                        optionalArgs[L"sections"]->members[L"Content-Length"] =
+                                managePtr(value{std::to_wstring(optionalArgs[L"body"]->members[L"length"]->getInt()),
+                                                rex::stringMethods::getMethodsCxt()});
+                        break;
+                    }
+                    // no need to create an else branch, just let it fallback to default
+                }
+                default: {
+                    vstr dst;
+                    json::dumpObjectToJson(*static_cast<rex::interpreter *>(interpreter), *optionalArgs[L"body"], dst);
+                    optionalArgs[L"body"] = managePtr(value{wstring2string(dst), rex::bytesMethods::getMethodsCxt()});
+                    optionalArgs[L"sections"]->members[L"Content-Length"] =
+                            managePtr(value{std::to_wstring(optionalArgs[L"body"]->getBytes().size()),
+                                            rex::stringMethods::getMethodsCxt()});
+                }
+            }
+
+            // make up the request raw bytes
+            // first line
+            in->invokeFunc(socketObject->members[L"send"], {value{
+                    wstring2string(method) + " " + wstring2string(parsedUrl[L"target"]->getStr()) + " HTTP/1.1\r\n",
+                    rex::bytesMethods::getMethodsCxt()}}, socketObject);
+            // sections
+            for (auto &section: optionalArgs[L"sections"]->members) {
+                in->invokeFunc(socketObject->members[L"send"], {value{
+                        wstring2string(section.first) + ": " + wstring2string(section.second->getStr()) + "\r\n",
+                        rex::bytesMethods::getMethodsCxt()}}, socketObject);
+            }
+            in->invokeFunc(socketObject->members[L"send"], {value{"\r\n", rex::bytesMethods::getMethodsCxt()}},
+                           socketObject);
+
+            // make up the request body if present
+            switch (optionalArgs[L"body"]->kind) {
+                case rex::value::vKind::vBytes: {
+                    // bytes
+                    in->invokeFunc(socketObject->members[L"send"], {*optionalArgs[L"body"]}, socketObject);
+                    break;
+                }
+                case rex::value::vKind::vObject: {
+                    // file
+                    vint remainSize = optionalArgs[L"body"]->members[L"length"]->getInt();
+                    while (remainSize > 0) {
+                        vint chunkSize = remainSize > 1048576 ? 1048576 : remainSize;
+
+                        in->invokeFunc(socketObject->members[L"send"],
+                                       {in->invokeFunc(optionalArgs[L"body"]->members[L"recv"], {chunkSize},
+                                                       optionalArgs[L"body"])}, socketObject);
+                        remainSize -= chunkSize;
+                    }
+                    break;
+                }
+                default: {
+                    break;
+                }
+            }
+
+            return {response::getMethodsCxt(socketObject, optionalArgs)};
         }
 
         value::cxtObject getMethodsCxt() {
@@ -269,7 +411,106 @@ namespace rexStd::net {
             result[L"parseHttpHeader"] = managePtr(value{value::nativeFuncPtr{parseHttpHeader}});
             result[L"parseUrl"] = managePtr(value{value::nativeFuncPtr{parseUrl}});
             result[L"generateHttpHeader"] = managePtr(value{value::nativeFuncPtr{generateHttpHeader}});
+            result[L"open"] = managePtr(value{value::nativeFuncPtr{open}});
             return result;
+        }
+
+        namespace response {
+            value::cxtObject getMethodsCxt(const managedPtr<value> &socketObject, value &requestOptArgs) {
+                value::cxtObject result;
+                result[L"recv"] = managePtr(value{value::nativeFuncPtr{recv}});
+                result[L"recvHeaders"] = managePtr(value{value::nativeFuncPtr{recvHeaders}});
+
+                result[L"body"] = managePtr(value{"", bytesMethods::getMethodsCxt()});
+                result[L"headers"] = managePtr(value{});
+                result[L"__socket__"] = socketObject;
+                result[L"__optionalArgs__"] = managePtr(requestOptArgs);
+                return result;
+            }
+
+            nativeFn(recvHeaders, interpreter, args, passThisPtr) {
+                auto in = static_cast<rex::interpreter *>(interpreter);
+
+                auto &socketObject = passThisPtr->members[L"__socket__"];
+                vbytes result;
+                while (true) {
+                    result += in->invokeFunc(socketObject->members[L"recv"], {(vint) 1},
+                                             socketObject).getBytes();
+                    if (result.ends_with("\r\n\r\n"))
+                        break;
+                }
+                passThisPtr->members[L"headers"] = managePtr(parseHttpHeader(
+                        interpreter, {{string2wstring(result), rex::stringMethods::getMethodsCxt()}}, {}));
+                return passThisPtr;
+            }
+
+            nativeFn(recv, interpreter, args, passThisPtr) {
+                auto in = static_cast<rex::interpreter *>(interpreter);
+
+                auto &socketObject = passThisPtr->members[L"__socket__"];
+                auto &sections = passThisPtr->members[L"headers"]->members[L"sections"];
+
+                if (auto it = sections->members.find(L"Transfer-Encoding");
+                        it != sections->members.end() and it->second->getStr().find(L"chunked") != vstr::npos) {
+                    // 我他妈不想适配这个啊操 日你妈傻逼 chunked transfer encoding
+                    while (true) {
+                        vbytes result;
+                        while (true) {
+                            result += in->invokeFunc(socketObject->members[L"recv"], {(vint) 1},
+                                                     socketObject).getBytes();
+                            if (result.ends_with("\r\n"))
+                                break;
+                        }
+                        vint chunkSize = std::stoll(result, nullptr, 16);
+                        if (chunkSize == 0) {
+                            // skip the CRLF
+                            in->invokeFunc(
+                                    socketObject->members[L"recv"], {(vint) 2}, socketObject).getBytes();
+                            break;
+                        }
+                        while (chunkSize > 0) {
+                            auto &&chunk =
+                                    in->invokeFunc(socketObject->members[L"recv"], {chunkSize}, socketObject);
+                            if (args.empty()) {
+                                passThisPtr->members[L"body"]->getBytes() += chunk.getBytes();
+                            } else {
+                                auto ptrToFunc = args[0].isRef() ? args[0].refObj : managePtr(args[0]);
+                                in->invokeFunc(ptrToFunc, {chunk}, {});
+                            }
+                            chunkSize -= (vint) chunk.getBytes().size();
+                        }
+                        in->invokeFunc(
+                                socketObject->members[L"recv"], {(vint) 2}, socketObject).getBytes(); // skip the CRLF
+                    }
+                    return passThisPtr;
+                } else if (it = sections->members.find(L"Content-Length"); it != sections->members.end()) {
+                    vint remainSize = std::stoll(it->second->getStr());
+                    vint chunkSize = passThisPtr->members[L"__optionalArgs__"]->members[L"chunkSize"]->getInt();
+
+                    if (args.empty()) {
+                        // no args means receive all and put them to response.body
+
+                        while (remainSize > 0) {
+                            vint readSize = remainSize > chunkSize ? chunkSize : remainSize;
+                            auto &&buf = in->invokeFunc(socketObject->members[L"recv"], {readSize}, socketObject);
+                            passThisPtr->members[L"body"]->getBytes() += buf.getBytes();
+                            remainSize -= (vint) buf.getBytes().size();
+                        }
+                    } else {
+                        auto ptrToFunc = args[0].isRef() ? args[0].refObj : managePtr(args[0]);
+                        while (remainSize > 0) {
+                            vint readSize = remainSize > chunkSize ? chunkSize : remainSize;
+                            auto &&buf = in->invokeFunc(socketObject->members[L"recv"], {readSize}, socketObject);
+                            in->invokeFunc(ptrToFunc, {buf}, {});
+                            remainSize -= (vint) buf.getBytes().size();
+                        }
+                    }
+                    return passThisPtr;
+                } else {
+                    // you don't need to receive the fucking data because there's no data in the body to receive unless they are chunked. whatever, I don't give a fuck.
+                    return passThisPtr;
+                }
+            }
         }
     }
 }
