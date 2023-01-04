@@ -403,7 +403,9 @@ namespace rexStd::net {
                 }
             }
 
-            return {response::getMethodsCxt(socketObject, optionalArgs)};
+            value result{response::getMethodsCxt(socketObject, optionalArgs)};
+            in->invokeFunc(result.members[L"recvHeaders"], {}, managePtr(result));
+            return result;
         }
 
         value::cxtObject getMethodsCxt() {
