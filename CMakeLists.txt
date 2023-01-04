@@ -22,5 +22,7 @@ add_executable(test main.cpp ${REX_SRC})
 if (CMAKE_HOST_SYSTEM_NAME MATCHES "Windows")
     set(CMAKE_CXX_FLAGS "-static -lpthread")
     target_link_libraries(std wsock32 ws2_32)
-    target_link_libraries(std_zipfile wsock32 ws2_32)
 endif ()
+
+find_package(OpenSSL REQUIRED)
+target_link_libraries(std OpenSSL::SSL OpenSSL::Crypto)

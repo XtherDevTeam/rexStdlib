@@ -8,11 +8,17 @@
 #include <set>
 #include <string>
 #include <cstring>
-#include "unistd.h"
+#include <openssl/err.h>
+#include <openssl/rand.h>
+#include <openssl/crypto.h>
+#include <openssl/ssl.h>
+#include <unistd.h>
 
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#pragma comment(lib, "libeay32.lib")
+#pragma comment(lib, "ssleay32.lib")
 
 struct __WSAINIT {
     __WSAINIT () {
@@ -38,14 +44,31 @@ struct __WSAINIT {
 
 #endif
 
+struct sslInfo {
+    SSL *ssl{};
+    SSL_CTX *ctx{};
+    int fd{};
+};
+
 struct socketStartup {
     std::shared_ptr<std::set<int>> fdSet;
+    std::shared_ptr<std::set<sslInfo *>> sslConnectionSet;
 
     socketStartup() {
         fdSet = std::make_shared<std::set<int>>();
+        sslConnectionSet = std::make_shared<std::set<sslInfo *>>();
+        SSL_library_init();
+        OpenSSL_add_all_algorithms();
+        SSL_load_error_strings();
     }
 
     ~socketStartup() {
+        for (auto &i: *sslConnectionSet) {
+            SSL_CTX_free(i->ctx);
+            SSL_shutdown(i->ssl);
+            SSL_free(i->ssl);
+            delete i;
+        }
         for (auto &i: *fdSet)
             close_socket(i);
         fdSet->clear();
@@ -134,7 +157,7 @@ namespace libnet {
     }
 
     void socketRecv(int fd, std::string &buf, int recvFlag = 0) {
-        if (auto res = recv(fd, buf.data(), buf.size(), recvFlag) ; res < 0) {
+        if (auto res = recv(fd, buf.data(), buf.size(), recvFlag); res < 0) {
             throw std::runtime_error("libnet: error receiving message");
         } else if (res == 0) {
             buf = {};
@@ -146,6 +169,47 @@ namespace libnet {
     void socketClose(int fd) {
         close_socket(fd);
         socketStartupInstance.fdSet->erase(fd);
+    }
+
+    sslInfo *sslSocket(int fd) {
+        auto *r = new sslInfo();
+        if((r->ctx = SSL_CTX_new(TLS_method())) == nullptr)
+            throw std::runtime_error("libnet: error creating ssl context");
+        r->ssl = SSL_new(r->ctx);
+        SSL_set_fd(r->ssl, fd);
+        if (auto retCode = SSL_connect(r->ssl); retCode != 1) {
+            throw std::runtime_error("libnet: error making ssl connection: ErrorCode: " + std::to_string(SSL_get_error(r->ssl,retCode)));
+        }
+        r->fd = fd;
+        socketStartupInstance.sslConnectionSet->insert(r);
+        return r;
+    }
+
+
+
+    void sslSend(sslInfo *fd, const std::string &data) {
+        if (SSL_write(fd->ssl, data.data(), (int)data.size()) <= 0) {
+            throw std::runtime_error("libnet: error sending message");
+        }
+    }
+
+    void sslRecv(sslInfo *fd, std::string &dest) {
+        if (auto res = SSL_read(fd->ssl, dest.data(), (int)dest.size()); res < 0) {
+            throw std::runtime_error("libnet: error receiving message");
+        } else if (res == 0) {
+            dest = {};
+        } else {
+            dest.resize(res);
+        }
+    }
+
+    void sslClose(sslInfo *fd) {
+        SSL_CTX_free(fd->ctx);
+        SSL_shutdown(fd->ssl);
+        SSL_free(fd->ssl);
+        close_socket(fd->fd);
+        socketStartupInstance.fdSet->erase(fd->fd);
+        socketStartupInstance.sslConnectionSet->erase(fd);
     }
 }
 

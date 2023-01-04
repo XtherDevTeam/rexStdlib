@@ -3,10 +3,9 @@
 //
 
 #include <exceptions/signalException.hpp>
-#include "net.hpp"
 #include "net/socket.hpp"
+#include "net.hpp"
 #include "json.hpp"
-#include "fs.hpp"
 
 namespace rexStd::net {
     nativeFn(resolve, interpreter, args, passThisPtr) {
@@ -29,6 +28,7 @@ namespace rexStd::net {
         value::cxtObject cxt;
         cxt[L"resolve"] = managePtr(value{value::nativeFuncPtr{resolve}});
         cxt[L"socket"] = managePtr(value{value::nativeFuncPtr{rexSocket}});
+        cxt[L"secureSocket"] = managePtr(value{value::nativeFuncPtr{rexSecureSocket}});
         cxt[L"http"] = managePtr(value{http::getMethodsCxt()});
         return cxt;
     }
@@ -271,7 +271,7 @@ namespace rexStd::net {
         nativeFn(open, interpreter, args, passThisPtr) {
             auto in = static_cast<rex::interpreter *>(interpreter);
 
-            managedPtr<value> socketObject = managePtr(rexSocket(interpreter, {}, {}));
+            managedPtr<value> socketObject;
 
             vstr method = args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr();
             value parsedUrl = parseUrl(interpreter, {args[1].isRef() ? args[1].getRef() : args[1]}, passThisPtr);
@@ -284,16 +284,21 @@ namespace rexStd::net {
             // resolve ip
             value ipAddr = resolve(interpreter, {*parsedUrl[L"host"]}, {});
             if (parsedUrl[L"protocol"]->getStr() == L"http") {
+                socketObject = managePtr(rexSocket(interpreter, {}, {}));
                 // check and patch the default port in http connection
                 if (parsedUrl[L"port"]->kind == rex::value::vKind::vNull)
                     *parsedUrl[L"port"] = vint{80};
-
-                in->invokeFunc(socketObject->members[L"connect"], {ipAddr, *parsedUrl[L"port"]}, socketObject);
+            } else if (parsedUrl[L"protocol"]->getStr() == L"https") {
+                socketObject = managePtr(rexSecureSocket(interpreter, {}, {}));
+                // check and patch the default port in https connection
+                if (parsedUrl[L"port"]->kind == rex::value::vKind::vNull)
+                    *parsedUrl[L"port"] = vint{443};
             } else {
-                // not implemented: https
                 throw signalException(
-                        interpreter::makeErr(L"httpError", L"Not implemented: 哪个带善人帮忙做一下https啊求求了😭😭😭"));
+                        interpreter::makeErr(L"httpError", L"瞎几把调用API是吧😅😅😅？"));
             }
+
+            in->invokeFunc(socketObject->members[L"connect"], {ipAddr, *parsedUrl[L"port"]}, socketObject);
 
             // check and patch the present arguments
             if (auto it = optionalArgs.members.find(L"stream"); it != optionalArgs.members.end()) {
@@ -403,8 +408,8 @@ namespace rexStd::net {
                 }
             }
 
-            value result{response::getMethodsCxt(socketObject, optionalArgs)};
-            in->invokeFunc(result.members[L"recvHeaders"], {}, managePtr(result));
+            managedPtr<value> result = managePtr(value{response::getMethodsCxt(socketObject, optionalArgs)});
+            in->invokeFunc(result->members[L"recvHeaders"], {}, result);
             return result;
         }
 
@@ -513,6 +518,64 @@ namespace rexStd::net {
                     return passThisPtr;
                 }
             }
+        }
+    }
+
+    namespace secureSocket {
+        value::cxtObject getMethodsCxt(int fd) {
+            value::cxtObject cxt;
+            cxt[L"connect"] = managePtr(value{value::nativeFuncPtr{connect}});
+            cxt[L"recv"] = managePtr(value{value::nativeFuncPtr{recv}});
+            cxt[L"send"] = managePtr(value{value::nativeFuncPtr{send}});
+            cxt[L"close"] = managePtr(value{value::nativeFuncPtr{close}});
+
+            cxt[L"__sslinfo__"] = managePtr(value{(vint) 0});
+            cxt[L"__fd__"] = managePtr(value{(vint) fd});
+            cxt[L"__sendFlag__"] = managePtr(value{(vint) 0});
+            cxt[L"__recvFlag__"] = managePtr(value{(vint) 0});
+            return cxt;
+        }
+
+        nativeFn(connect, interpreter, args, passThisPtr) {
+            vint &socketFd = passThisPtr->members[L"__fd__"]->getInt();
+            const vstr &ipAddr = args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr();
+            unsigned short port{(unsigned short) (args[1].isRef() ? args[1].getRef().getInt() : args[1].getInt())};
+            try {
+                libnet::socketConnect((int) socketFd, wstring2string(ipAddr), port);
+                passThisPtr->members[L"__sslinfo__"]->basicValue.unknown =
+                        (unknownPtr) libnet::sslSocket((int) socketFd);
+                return {};
+            } catch (const std::runtime_error &error) {
+                throw signalException(interpreter::makeErr(L"netError", string2wstring(error.what())));
+            }
+        }
+
+        nativeFn(recv, interpreter, args, passThisPtr) {
+            auto sslInf = (sslInfo *) passThisPtr->members[L"__sslinfo__"]->basicValue.unknown;
+            value res{"", bytesMethods::getMethodsCxt()};
+            res.getBytes().resize(args[0].isRef() ? args[0].getRef().getInt() : args[0].getInt());
+            libnet::sslRecv(sslInf, res.getBytes());
+            return res;
+        }
+
+        nativeFn(send, interpreter, args, passThisPtr) {
+            auto sslInf = (sslInfo *) passThisPtr->members[L"__sslinfo__"]->basicValue.unknown;
+            libnet::sslSend(sslInf,
+                            args[0].isRef() ? args[0].getRef().getBytes() : args[0].getBytes());
+            return {};
+        }
+
+        nativeFn(close, interpreter, args, passThisPtr) {
+            libnet::sslClose((sslInfo *) passThisPtr->members[L"__sslinfo__"]->basicValue.unknown);
+            return {};
+        }
+    }
+
+    nativeFn(rexSecureSocket, interpreter, args, passThisPtr) {
+        try {
+            return secureSocket::getMethodsCxt(libnet::socket());
+        } catch (const std::runtime_error &error) {
+            throw signalException(interpreter::makeErr(L"netError", string2wstring(error.what())));
         }
     }
 }
