@@ -305,16 +305,14 @@
 - Throws: `httpError` if something goes wrong
 - Notes: use call-chain to set the details of the requests like `.recvAsStream()` `.sendFile()` `.sendJson()` `.callback()`
 
-### std.net.ssl.sslContext
+# libtime
+
+- Where: `std.time`
+
+### std.time.time
 
 - Type: function
-- Call format: `std.net.ssl.sslContext(mode)`
-- Result: `vObject` that contains the ssl context.
-- Throws: `sslError` if something goes wrong
-
-### std.net.ssl.sslContext.wrapSocket
-
-- Type: function
-- Call format: `std.net.ssl.sslContext.wrapSocket(socket)`
-- Result: `vObject` that contains the wrapped socket.
-- Throws: `sslError` if something goes wrong
+- Call format: `std.time.time([timestamp])`
+- Result: `vObject` that contains the parsed time structure
+- Throws: none
+- Notes: timestamp is optional, function will get the current timestamp as the first param if user don't provide

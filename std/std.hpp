@@ -9,6 +9,7 @@
 #include "sqlite.hpp"
 #include "net.hpp"
 #include "json.hpp"
+#include "time.hpp"
 
 using namespace rex;
 
