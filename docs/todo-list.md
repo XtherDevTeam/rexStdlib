@@ -58,6 +58,12 @@
 - Result: `null`
 - Throws: `fsError` if file is invalid.
 
+### std.fs.temp
+
+- Type: function
+- Call format: `std.fs.temp()`
+- Result: `vStr` that contains the path of temp directory
+
 ### std.fs.access
 
 - Type: function

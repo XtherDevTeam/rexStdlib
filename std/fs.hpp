@@ -52,6 +52,8 @@ namespace rexStd::fs {
 
     nativeFn(copy, interpreter, args, _);
 
+    nativeFn(temp, interpreter, args, _);
+
     value::cxtObject getMethodsCxt();
 }
 

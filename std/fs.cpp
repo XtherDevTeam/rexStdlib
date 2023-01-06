@@ -127,6 +127,7 @@ namespace rexStd::fs {
         cxt[L"realpath"] = managePtr(value{(value::nativeFuncPtr) realpath});
         cxt[L"getFileDir"] = managePtr(value{(value::nativeFuncPtr) getFileDir});
         cxt[L"copy"] = managePtr(value{(value::nativeFuncPtr) copy});
+        cxt[L"temp"] = managePtr(value{(value::nativeFuncPtr) temp});
 
         cxt[L"F_OK"] = managePtr(value{(vint) F_OK});
         cxt[L"W_OK"] = managePtr(value{(vint) W_OK});
@@ -134,6 +135,19 @@ namespace rexStd::fs {
         cxt[L"X_OK"] = managePtr(value{(vint) X_OK});
 
         return cxt;
+    }
+
+    nativeFn(temp, interpreter, args, _) {
+        std::error_code ec;
+        auto p = std::filesystem::temp_directory_path(ec);
+        if (ec) {
+            throw signalException{interpreter::makeErr(
+                    L"fsError",
+                    L"Unable to get the temp directory: [Errno " + std::to_wstring(ec.value()) + L"]" +
+                    string2wstring(ec.message()))};
+        }
+
+        return {string2wstring(p.string()), rex::stringMethods::getMethodsCxt()};
     }
 
     nativeFn(access, interpreter, args, _) {
@@ -270,8 +284,8 @@ namespace rexStd::fs {
     }
 
     nativeFn(getFileDir, interpreter, args, _) {
-        vbytes filePath{};
-        std::filesystem::path p(workaround::strToPathType(args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr()));
+        std::filesystem::path p(
+                workaround::strToPathType(args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr()));
 
         return {string2wstring(p.parent_path().string()), rex::stringMethods::getMethodsCxt()};
     }
@@ -279,8 +293,10 @@ namespace rexStd::fs {
     nativeFn(copy, interpreter, args, _) {
         vbytes filePath{};
         std::error_code ec;
-        std::filesystem::path src(workaround::strToPathType(args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr()));
-        std::filesystem::path dest(workaround::strToPathType(args[1].isRef() ? args[1].getRef().getStr() : args[1].getStr()));
+        std::filesystem::path src(
+                workaround::strToPathType(args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr()));
+        std::filesystem::path dest(
+                workaround::strToPathType(args[1].isRef() ? args[1].getRef().getStr() : args[1].getStr()));
         std::filesystem::copy(src, dest, std::filesystem::copy_options::recursive, ec);
         if (ec) {
             throw signalException{
