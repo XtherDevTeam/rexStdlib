@@ -22,7 +22,7 @@ namespace rexStd::zip {
             }
 
             nativeFn(next, interpreter, args, _) {
-                if (!_->members[L"__object__"]->members[L"__entryWorking"]->getBool()) {
+                if (!_->members[L"__object__"]->members[L"__entryWorking__"]->getBool()) {
                     auto zip = (zip_t *) _->members[L"__object__"]->members[L"__zip__"]->basicValue.unknown;
                     auto &items = _->members[L"__items__"]->getInt();
                     auto &current = _->members[L"__current__"]->getInt();
@@ -56,7 +56,7 @@ namespace rexStd::zip {
             nativeFn(close, interpreter, args, _) {
                 auto zip = (zip_t *) _->members[L"__zip__"]->basicValue.unknown;
                 if (auto res = zip_entry_close(zip); res >= 0) {
-                    _->members[L"__entryWorking"]->getBool() = false;
+                    _->members[L"__entryWorking__"]->getBool() = false;
                     return {};
                 } else {
                     throw signalException(interpreter::makeErr(
@@ -155,8 +155,8 @@ namespace rexStd::zip {
         }
 
         nativeFn(entry, interpreter, args, _) {
-            if (!_->members[L"__entryWorking"]->getBool()) {
-                _->members[L"__entryWorking"]->getBool() = true;
+            if (!_->members[L"__entryWorking__"]->getBool()) {
+                _->members[L"__entryWorking__"]->getBool() = true;
                 auto zip = (zip_t *) _->members[L"__zip__"]->basicValue.unknown;
                 return entryObject::getMethodsCxt(zip);
             } else {
