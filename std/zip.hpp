@@ -22,7 +22,7 @@ namespace rexStd::zip {
 
     namespace file {
         namespace entryObject {
-            value::cxtObject getMethodsCxt(zip_t *zip);
+            value::cxtObject getMethodsCxt(zip_t *zip, const std::shared_ptr<value> &entryWorking);
 
             nativeFn(close, interpreter, args, _);
 
@@ -55,6 +55,8 @@ namespace rexStd::zip {
         nativeFn(Delete, interpreter, args, _);
 
         nativeFn(rexIter, interpreter, args, _);
+
+        nativeFn(close, interpreter, args, _);
     }
 
     nativeFn(open, interpreter, args, _);

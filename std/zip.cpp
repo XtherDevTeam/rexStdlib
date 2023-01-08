@@ -30,7 +30,7 @@ namespace rexStd::zip {
                         throw signalBreak();
                     zip_entry_openbyindex(zip, current);
                     current++;
-                    return entryObject::getMethodsCxt(zip);
+                    return entryObject::getMethodsCxt(zip, _->members[L"__object__"]->members[L"__entryWorking__"]);
                 } else {
                     throw signalException(interpreter::makeErr(L"zipError", L"another entry is working"));
                 }
@@ -38,7 +38,7 @@ namespace rexStd::zip {
         }
 
         namespace entryObject {
-            value::cxtObject getMethodsCxt(zip_t *zip) {
+            value::cxtObject getMethodsCxt(zip_t *zip, const std::shared_ptr<value> &entryWorking) {
                 value::cxtObject result;
                 result[L"close"] = managePtr(value{value::nativeFuncPtr{close}});
                 result[L"size"] = managePtr(value{value::nativeFuncPtr{size}});
@@ -49,7 +49,7 @@ namespace rexStd::zip {
                 result[L"read"] = managePtr(value{value::nativeFuncPtr{read}});
                 result[L"write"] = managePtr(value{value::nativeFuncPtr{write}});
                 result[L"__zip__"] = managePtr(value{(unknownPtr) zip});
-
+                result[L"__entryWorking__"] = entryWorking;
                 return result;
             }
 
@@ -116,19 +116,11 @@ namespace rexStd::zip {
             }
 
             nativeFn(read, interpreter, args, _) {
-                struct bufferT {
-                    void *buf{};
-                    size_t size{};
-                } buf;
                 auto zip = (zip_t *) _->members[L"__zip__"]->basicValue.unknown;
-                vint size = args[1].isRef() ? args[1].getRef().getInt() : args[1].getInt();
+                vint size = (vint) zip_entry_size(zip);
                 value result{vbytes(size, '\0'), rex::bytesMethods::getMethodsCxt()};
 
-                // init buf
-                buf.buf = result.getBytes().data();
-                buf.size = result.getBytes().size();
-
-                if (auto res = zip_entry_read(zip, &buf.buf, &buf.size); res > 0) {
+                if (auto res = zip_entry_noallocread(zip, result.getBytes().data(), size); res > 0) {
                     result.getBytes().resize(res);
                     return result;
                 } else if (res == 0) {
@@ -148,10 +140,21 @@ namespace rexStd::zip {
             result[L"entries"] = managePtr(value{value::nativeFuncPtr{entries}});
             result[L"delete"] = managePtr(value{value::nativeFuncPtr{Delete}});
             result[L"rexIter"] = managePtr(value{value::nativeFuncPtr{rexIter}});
+            result[L"close"] = managePtr(value{value::nativeFuncPtr{close}});
 
             result[L"__zip__"] = managePtr(value{(unknownPtr) zip});
             result[L"__entryWorking__"] = managePtr(value{(vbool) false});
             return result;
+        }
+
+        nativeFn(close, interpreter, args, _) {
+            if (!_->members[L"__entryWorking__"]->getBool()) {
+                auto zip = (zip_t *) _->members[L"__zip__"]->basicValue.unknown;
+                zip_close(zip);
+                return {};
+            } else {
+                throw signalException(interpreter::makeErr(L"zipError", L"entry is working"));
+            }
         }
 
         nativeFn(entry, interpreter, args, _) {
@@ -161,9 +164,9 @@ namespace rexStd::zip {
 
                 auto zip = (zip_t *) _->members[L"__zip__"]->basicValue.unknown;
                 zip_entry_open(zip, filename.c_str());
-                return entryObject::getMethodsCxt(zip);
+                return entryObject::getMethodsCxt(zip, _->members[L"__entryWorking__"]);
             } else {
-                throw signalException(interpreter::makeErr(L"zipError", L"Another entry are working"));
+                throw signalException(interpreter::makeErr(L"zipError", L"another entry is working"));
             }
         }
 
