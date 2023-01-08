@@ -18,7 +18,7 @@ namespace rexStd::zip {
 
     static int callbackAdaptOnExtract(const char *filename, void *arg);
 
-    static size_t callbackAdaptOnExtractFile(void *arg, unsigned long long offset, const void *data, size_t size);
+    static size_t callbackAdaptOnExtractFile(void *arg, uint64_t offset, const void *data, size_t size);
 
     namespace file {
         namespace entryObject {

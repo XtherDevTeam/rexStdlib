@@ -10,6 +10,7 @@
 #include "net.hpp"
 #include "json.hpp"
 #include "time.hpp"
+#include "zip.hpp"
 
 using namespace rex;
 

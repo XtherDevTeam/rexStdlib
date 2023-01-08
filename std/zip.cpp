@@ -219,7 +219,7 @@ namespace rexStd::zip {
         return 0;
     }
 
-    size_t callbackAdaptOnExtractFile(void *arg, unsigned long long int offset, const void *data, size_t size) {
+    size_t callbackAdaptOnExtractFile(void *arg, uint64_t offset, const void *data, size_t size) {
         auto instance = (callbackMsg *) arg;
         value param = {"", bytesMethods::getMethodsCxt()};
         param.getBytes().resize(size);
