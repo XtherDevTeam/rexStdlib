@@ -90,6 +90,22 @@ It seemed a bit difficult to port to reXscript, like `callable` functions adapt 
 
   Usage: get the number of entries
   
+- `std.zip.file.entry.read(size)`
+
+  Type: `function`
+
+  Returns: `vBytes` that contains the read content
+
+  Usage: to read file in zip archive
+  
+- `std.zip.file.entry.write(buf)`
+
+  Type: `function`
+
+  Returns: `vNull`
+
+  Usage: to write data to file in zip archive
+
 - `std.zip.file.delete(entryName)`
 
   Type: `function`

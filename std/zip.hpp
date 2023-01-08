@@ -35,6 +35,10 @@ namespace rexStd::zip {
             nativeFn(extract, interpreter, args, _);
 
             nativeFn(name, interpreter, args, _);
+
+            nativeFn(write, interpreter, args, _);
+
+            nativeFn(read, interpreter, args, _);
         }
         namespace iter {
             value::cxtObject getMethodsCxt(const std::shared_ptr<value> &passThisPtr, vint count);

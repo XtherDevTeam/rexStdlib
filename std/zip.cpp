@@ -46,6 +46,8 @@ namespace rexStd::zip {
                 result[L"isDir"] = managePtr(value{value::nativeFuncPtr{isDir}});
                 result[L"extract"] = managePtr(value{value::nativeFuncPtr{extract}});
                 result[L"name"] = managePtr(value{value::nativeFuncPtr{name}});
+                result[L"read"] = managePtr(value{value::nativeFuncPtr{read}});
+                result[L"write"] = managePtr(value{value::nativeFuncPtr{write}});
                 result[L"__zip__"] = managePtr(value{(unknownPtr) zip});
 
                 return result;
@@ -99,6 +101,44 @@ namespace rexStd::zip {
             nativeFn(name, interpreter, args, _) {
                 auto zip = (zip_t *) _->members[L"__zip__"]->basicValue.unknown;
                 return {string2wstring(zip_entry_name(zip)), rex::stringMethods::getMethodsCxt()};
+            }
+
+            nativeFn(write, interpreter, args, _) {
+                auto zip = (zip_t *) _->members[L"__zip__"]->basicValue.unknown;
+                const vbytes &src = args[0].isRef() ? args[0].getRef().getBytes() : args[0].getBytes();
+                if (auto res = zip_entry_write(zip, src.data(), src.size()); res >= 0) {
+                    return {};
+                } else {
+                    throw signalException(interpreter::makeErr(
+                            L"zipError",
+                            L"cannot write file: " + string2wstring(zip_strerror(res))));
+                }
+            }
+
+            nativeFn(read, interpreter, args, _) {
+                struct bufferT {
+                    void *buf{};
+                    size_t size{};
+                } buf;
+                auto zip = (zip_t *) _->members[L"__zip__"]->basicValue.unknown;
+                vint size = args[1].isRef() ? args[1].getRef().getInt() : args[1].getInt();
+                value result{vbytes(size, '\0'), rex::bytesMethods::getMethodsCxt()};
+
+                // init buf
+                buf.buf = result.getBytes().data();
+                buf.size = result.getBytes().size();
+
+                if (auto res = zip_entry_read(zip, &buf.buf, &buf.size); res > 0) {
+                    result.getBytes().resize(res);
+                    return result;
+                } else if (res == 0) {
+                    result.getBytes().clear();
+                    return result;
+                } else {
+                    throw signalException(interpreter::makeErr(
+                            L"zipError",
+                            L"cannot read file: " + string2wstring(zip_strerror(res))));
+                }
             }
         }
 
