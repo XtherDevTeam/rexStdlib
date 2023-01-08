@@ -13,9 +13,7 @@ include(${REX_SRC_DIR}/rex.cmake)
 
 file(GLOB REX_STDLIB_SRC std/*.cpp)
 
-add_library(std SHARED std/sqlite/sqlite3.c ${REX_STDLIB_SRC} ${REX_SRC})
-
-add_library(std_zipfile SHARED std/zipfile/zipfile.cpp ${REX_SRC})
+add_library(std SHARED std/sqlite/sqlite3.c std/zip/zip.c ${REX_STDLIB_SRC} ${REX_SRC})
 
 add_executable(test main.cpp ${REX_SRC})
 

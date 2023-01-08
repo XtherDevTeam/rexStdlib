@@ -25,3 +25,6 @@ dist_prod: cmake_prod build_prod
 	mkdir dist
 	cp cmake-build-release/*libstd* dist/
 	cp rex/* dist/
+
+update_upstream:
+	cd reXscript; git pull origin master
