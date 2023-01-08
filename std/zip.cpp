@@ -166,6 +166,11 @@ namespace rexStd::zip {
         value::cxtObject result;
         result[L"open"] = managePtr(value{value::nativeFuncPtr{open}});
         result[L"extract"] = managePtr(value{value::nativeFuncPtr{extract}});
+        result[L"ZIP_DEFAULT_COMPRESSION_LEVEL"] = managePtr(value{(vint) ZIP_DEFAULT_COMPRESSION_LEVEL});
+        result[L"M_WRITE"] = managePtr(value{(vint) 1});
+        result[L"M_READ"] = managePtr(value{(vint) 2});
+        result[L"M_APPEND"] = managePtr(value{(vint) 3});
+        result[L"M_DELETE"] = managePtr(value{(vint) 4});
         return result;
     }
 
