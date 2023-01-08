@@ -157,7 +157,10 @@ namespace rexStd::zip {
         nativeFn(entry, interpreter, args, _) {
             if (!_->members[L"__entryWorking__"]->getBool()) {
                 _->members[L"__entryWorking__"]->getBool() = true;
+                vbytes filename = wstring2string(args[0].isRef() ? args[0].getRef().getStr() : args[0].getStr());
+
                 auto zip = (zip_t *) _->members[L"__zip__"]->basicValue.unknown;
+                zip_entry_open(zip, filename.c_str());
                 return entryObject::getMethodsCxt(zip);
             } else {
                 throw signalException(interpreter::makeErr(L"zipError", L"Another entry are working"));
