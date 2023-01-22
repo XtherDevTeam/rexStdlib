@@ -325,11 +325,17 @@ namespace rexStd::net {
             if (!optionalArgs.members.contains(L"body"))
                 // if not exist, make it exists.
                 optionalArgs.members[L"body"] = managePtr(value{});
+
+            optionalArgs[L"body"] = optionalArgs[L"body"]->isRef() ? optionalArgs[L"body"]->refObj : optionalArgs[L"body"];
+
             if (!optionalArgs.members.contains(L"chunkSize"))
                 // if not exist, make it exists.
                 optionalArgs.members[L"chunkSize"] = managePtr(value{(vint) 1048576});
 
             switch (optionalArgs[L"body"]->kind) {
+                case rex::value::vKind::vFunc:
+                case rex::value::vKind::vNativeFuncPtr:
+                case rex::value::vKind::vLambda:
                 case rex::value::vKind::vNull: {
                     break;
                 }
@@ -347,17 +353,6 @@ namespace rexStd::net {
                             managePtr(value{std::to_wstring(optionalArgs[L"body"]->getBytes().size()),
                                             rex::stringMethods::getMethodsCxt()});
                     break;
-                }
-                case rex::value::vKind::vObject: {
-                    // check if this is a file
-                    if (optionalArgs[L"body"]->members.contains(L"rexFile")) {
-                        // no need to covert to vBytes
-                        optionalArgs[L"sections"]->members[L"Content-Length"] =
-                                managePtr(value{std::to_wstring(optionalArgs[L"body"]->members[L"length"]->getInt()),
-                                                rex::stringMethods::getMethodsCxt()});
-                        break;
-                    }
-                    // no need to create an else branch, just let it fallback to default
                 }
                 default: {
                     vstr dst;
@@ -390,17 +385,11 @@ namespace rexStd::net {
                     in->invokeFunc(socketObject->members[L"send"], {*optionalArgs[L"body"]}, socketObject);
                     break;
                 }
-                case rex::value::vKind::vObject: {
-                    // file
-                    vint remainSize = optionalArgs[L"body"]->members[L"length"]->getInt();
-                    while (remainSize > 0) {
-                        vint chunkSize = remainSize > 1048576 ? 1048576 : remainSize;
-
-                        in->invokeFunc(socketObject->members[L"send"],
-                                       {in->invokeFunc(optionalArgs[L"body"]->members[L"recv"], {chunkSize},
-                                                       optionalArgs[L"body"])}, socketObject);
-                        remainSize -= chunkSize;
-                    }
+                case rex::value::vKind::vFunc:
+                case rex::value::vKind::vLambda:
+                case rex::value::vKind::vNativeFuncPtr: {
+                    // 一切交给用户😋😋😋
+                    in->invokeFunc(optionalArgs[L"body"], {socketObject}, {});
                     break;
                 }
                 default: {
