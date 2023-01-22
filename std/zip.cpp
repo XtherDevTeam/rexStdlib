@@ -27,10 +27,12 @@ namespace rexStd::zip {
                     auto &items = _->members[L"__items__"]->getInt();
                     auto &current = _->members[L"__current__"]->getInt();
                     if (current >= items)
-                        throw signalBreak();
+                        return interpreter::makeIt({}, true);
                     zip_entry_openbyindex(zip, current);
                     current++;
-                    return entryObject::getMethodsCxt(zip, _->members[L"__object__"]->members[L"__entryWorking__"]);
+                    return interpreter::makeIt(managePtr(value{entryObject::getMethodsCxt(
+                                                       zip, _->members[L"__object__"]->members[L"__entryWorking__"])}),
+                                               false);
                 } else {
                     throw signalException(interpreter::makeErr(L"zipError", L"another entry is working"));
                 }
