@@ -268,6 +268,11 @@ namespace rexStd::net {
             return result;
         }
 
+
+        nativeFn(sendForm, interpreter, args, passThisPtr) {
+            return sendFormCallableObject::getMethodsCxt(args[0], args[1]);
+        }
+
         nativeFn(open, interpreter, args, passThisPtr) {
             auto in = static_cast<rex::interpreter *>(interpreter);
 
@@ -326,7 +331,8 @@ namespace rexStd::net {
                 // if not exist, make it exists.
                 optionalArgs.members[L"body"] = managePtr(value{});
 
-            optionalArgs[L"body"] = optionalArgs[L"body"]->isRef() ? optionalArgs[L"body"]->refObj : optionalArgs[L"body"];
+            optionalArgs[L"body"] = optionalArgs[L"body"]->isRef() ? optionalArgs[L"body"]->refObj
+                                                                   : optionalArgs[L"body"];
 
             if (!optionalArgs.members.contains(L"chunkSize"))
                 // if not exist, make it exists.
@@ -408,6 +414,7 @@ namespace rexStd::net {
             result[L"parseUrl"] = managePtr(value{value::nativeFuncPtr{parseUrl}});
             result[L"generateHttpHeader"] = managePtr(value{value::nativeFuncPtr{generateHttpHeader}});
             result[L"open"] = managePtr(value{value::nativeFuncPtr{open}});
+            result[L"sendForm"] = managePtr(value{value::nativeFuncPtr{sendForm}});
             return result;
         }
 
@@ -508,6 +515,67 @@ namespace rexStd::net {
                 }
             }
         }
+
+        namespace sendFormCallableObject {
+            nativeFn(rexInvoke, interpreter, args, passThisPtr) {
+                auto in = (rex::interpreter *) interpreter;
+                const managedPtr<value> &socketObject = args[0].refObj;
+                const vstr &boundary = passThisPtr->members[L"boundary"]->getStr();
+                const value::vecObject &Args = passThisPtr->members[L"args"]->getVec();
+                for (auto &i: Args) {
+                    value &object = eleGetRef(*i);
+                    auto content = eleRefObj(*object.members[L"content"]);
+                    const vstr &name = eleGetRef(*object.members[L"name"]).getStr();
+
+                    utils::send(in, socketObject, L"--" + boundary + L"\r\n");
+                    utils::send(in, socketObject, L"Content-Disposition: form-data; name=\"" + name + L"\"");
+                    if (auto it = object.members.find(L"filename"); it != object.members.end()) {
+                        const vstr &filename = eleGetRef(*it->second).getStr();
+                        utils::send(in, socketObject, L"; filename=\"" + filename + L"\"");
+                        utils::send(in, socketObject, L"\r\nContent-Type: application/octet-stream");
+                    }
+                    utils::send(in, socketObject, L"\r\n\r\n");
+                    switch (content->kind) {
+                        case rex::value::vKind::vBytes: {
+                            utils::send(in, socketObject, content->getBytes());
+                            break;
+                        }
+                        case rex::value::vKind::vStr: {
+                            utils::send(in, socketObject, content->getStr());
+                            break;
+                        }
+                        case rex::value::vKind::vObject: {
+                            if (content->members.contains(L"rexFile")) {
+                                vint remainSize = content->members[L"length"]->getInt();
+                                while (remainSize > 0) {
+                                    vint chunkSize = remainSize > 1048576 ? 1048576 : remainSize;
+
+                                    in->invokeFunc(
+                                            socketObject->members[L"send"], {in->invokeFunc(
+                                                    content->members[L"read"], {chunkSize},
+                                                    content)}, socketObject);
+                                    remainSize -= chunkSize;
+                                }
+                                in->invokeFunc(content->members[L"close"], {}, content);
+                            }
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+                }
+                if (!Args.empty()) utils::send(in, socketObject, L"--" + boundary + L"\r\n");
+                return {};
+            }
+
+            value::cxtObject getMethodsCxt(value &boundary, value &args) {
+                value::cxtObject result;
+                result[L"rexInvoke"] = managePtr(value{value::nativeFuncPtr{rexInvoke}});
+                result[L"boundary"] = managePtr(eleGetRef(boundary));
+                result[L"args"] = managePtr(eleGetRef(args));
+                return result;
+            }
+        }
     }
 
     namespace secureSocket {
@@ -565,6 +633,17 @@ namespace rexStd::net {
             return secureSocket::getMethodsCxt(libnet::socket());
         } catch (const std::runtime_error &error) {
             throw signalException(interpreter::makeErr(L"netError", string2wstring(error.what())));
+        }
+    }
+
+    namespace utils {
+        void send(interpreter *in, const managedPtr<value> &socketObject, const vstr &data) {
+            in->invokeFunc(socketObject->members[L"send"], {{wstring2string(data), bytesMethods::getMethodsCxt()}},
+                           socketObject);
+        }
+
+        void send(interpreter *in, const managedPtr<value> &socketObject, const vbytes &data) {
+            in->invokeFunc(socketObject->members[L"send"], {{data, bytesMethods::getMethodsCxt()}}, socketObject);
         }
     }
 }

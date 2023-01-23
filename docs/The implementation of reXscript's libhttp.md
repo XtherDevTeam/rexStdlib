@@ -7,6 +7,7 @@
 - `http.parseHttpHeader(headerStr)` 解析一个HTTP头字符串并将其转换为 `vObject`。
 - `http.parseUrl(urlStr)` 解析一个 `url` 字符串并返回解析完的 `vObject`。
 - `http.generateHttpHeader(headerObj)` 将一个 `header` 对象序列化为字符串。
+- `http.sendForm(boundary, args)` 接收一个对象，为要发送的 `filename` 、`name` 、`content`，内容可以为`vStr`、`vBytes`、包括 `read` `write` 等接口的文件对象，返回一个 `Callable-object`
 
 ## 请求的可选参数
 

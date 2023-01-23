@@ -16,6 +16,12 @@ namespace rexStd::net {
 
     nativeFn(rexSecureSocket, interpreter, args, passThisPtr);
 
+    namespace utils {
+        void send(interpreter *in, const managedPtr<value> &socketObject, const vstr &data);
+
+        void send(interpreter *in, const managedPtr<value> &socketObject, const vbytes &data);
+    }
+
     namespace socket {
         nativeFn(connect, interpreter, args, passThisPtr);
 
@@ -63,6 +69,12 @@ namespace rexStd::net {
             value::cxtObject getMethodsCxt(const managedPtr<value> &socketObject, value &requestOptArgs);
         }
 
+        namespace sendFormCallableObject {
+            nativeFn(rexInvoke, interpreter, args, passThisPtr);
+
+            value::cxtObject getMethodsCxt(value &boundary, value &args);
+        }
+
         nativeFn(parseHttpHeader, interpreter, args, passThisPtr);
 
         nativeFn(parseUrl, interpreter, args, passThisPtr);
@@ -70,6 +82,8 @@ namespace rexStd::net {
         nativeFn(generateHttpHeader, interpreter, args, passThisPtr);
 
         nativeFn(open, interpreter, args, passThisPtr);
+
+        nativeFn(sendForm, interpreter, args, passThisPtr);
 
         value::cxtObject getMethodsCxt();
     }
