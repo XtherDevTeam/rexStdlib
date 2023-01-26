@@ -1,0 +1,6 @@
+{
+  "name": "std",
+  "description": "reXscript Standard Library",
+  "version": "0.1",
+  "dependencies": {}
+}
