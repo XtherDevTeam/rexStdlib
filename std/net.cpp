@@ -163,6 +163,14 @@ namespace rexStd::net {
 
     namespace http {
         nativeFn(parseHttpHeader, interpreter, args, passThisPtr) {
+            auto lowerCase = [] (const vstr &str) {
+                vstr result{str};
+                for (auto &i : result) {
+                    if (i >= 'A' and i <= 'Z')
+                        i -= 32;
+                }
+                return result;
+            };
             value result{value::cxtObject{}};
             result.members[L"sections"] = managePtr(value{value::cxtObject{}});
 
@@ -173,7 +181,7 @@ namespace rexStd::net {
                     if (auto it = line.find(L": "); it != vstr::npos) {
                         vstr first = line.substr(0, it);
                         vstr second = line.substr(it + 2);
-                        result.members[L"sections"]->members[first] = managePtr(
+                        result.members[L"sections"]->members[lowerCase(first)] = managePtr(
                                 value{second, rex::stringMethods::getMethodsCxt()});
                     } else {
                         throw signalException(interpreter::makeErr(L"httpError", L"invalid headers"));
@@ -453,7 +461,7 @@ namespace rexStd::net {
                 auto &socketObject = passThisPtr->members[L"__socket__"];
                 auto &sections = passThisPtr->members[L"headers"]->members[L"sections"];
 
-                if (auto it = sections->members.find(L"Transfer-Encoding");
+                if (auto it = sections->members.find(L"transfer-encoding");
                         it != sections->members.end() and it->second->getStr().find(L"chunked") != vstr::npos) {
                     // 我他妈不想适配这个啊操 日你妈傻逼 chunked transfer encoding
                     while (true) {
@@ -486,7 +494,7 @@ namespace rexStd::net {
                                 socketObject->members[L"recv"], {(vint) 2}, socketObject).getBytes(); // skip the CRLF
                     }
                     return passThisPtr;
-                } else if (it = sections->members.find(L"Content-Length"); it != sections->members.end()) {
+                } else if (it = sections->members.find(L"content-length"); it != sections->members.end()) {
                     vint remainSize = std::stoll(it->second->getStr());
                     vint chunkSize = passThisPtr->members[L"__optionalArgs__"]->members[L"chunkSize"]->getInt();
 
