@@ -56,7 +56,10 @@ namespace rexStd::json {
         switch (src[pos]) {
             case '{': {
                 pos++;
+                while (src[pos] and src[pos] < '!') pos++;
                 dst = {value::cxtObject{}};
+                if (src[pos] == '}')
+                    break;
                 while (true) {
                     value left{}, right{};
                     pos = loadObjectToJson(src, left, pos);
