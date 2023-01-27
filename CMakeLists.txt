@@ -13,15 +13,15 @@ include(${REX_SRC_DIR}/rex.cmake)
 
 file(GLOB REX_STDLIB_SRC std/*.cpp)
 
+add_library(std SHARED std/sqlite/sqlite3.c std/zip/zip.c ${REX_STDLIB_SRC} ${REX_SRC})
+
+add_executable(test main.cpp ${REX_SRC})
+
 if (CMAKE_HOST_SYSTEM_NAME MATCHES "Windows")
     set(CMAKE_CXX_FLAGS "-static -lpthread")
     set(CMAKE_SHARED_LINKER_FLAGS "-static")
     target_link_libraries(std wsock32 ws2_32)
 endif ()
-
-add_library(std SHARED std/sqlite/sqlite3.c std/zip/zip.c ${REX_STDLIB_SRC} ${REX_SRC})
-
-add_executable(test main.cpp ${REX_SRC})
 
 find_package(OpenSSL REQUIRED)
 target_link_libraries(std OpenSSL::SSL OpenSSL::Crypto)
