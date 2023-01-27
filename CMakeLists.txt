@@ -15,7 +15,7 @@ file(GLOB REX_STDLIB_SRC std/*.cpp)
 
 add_library(std SHARED std/sqlite/sqlite3.c std/zip/zip.c ${REX_STDLIB_SRC} ${REX_SRC})
 
-add_executable(test main.cpp std/sqlite/sqlite3.c std/zip/zip.c ${REX_STDLIB_SRC} ${REX_SRC})
+add_executable(test main.cpp ${REX_SRC})
 
 if (CMAKE_HOST_SYSTEM_NAME MATCHES "Windows")
     set(CMAKE_CXX_FLAGS "-static -lpthread")
@@ -24,4 +24,3 @@ endif ()
 
 find_package(OpenSSL REQUIRED)
 target_link_libraries(std OpenSSL::SSL OpenSSL::Crypto)
-target_link_libraries(test OpenSSL::SSL OpenSSL::Crypto)
