@@ -167,7 +167,7 @@ namespace rexStd::net {
                 vstr result{str};
                 for (auto &i : result) {
                     if (i >= 'A' and i <= 'Z')
-                        i -= 32;
+                        i += 32;
                 }
                 return result;
             };
