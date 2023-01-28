@@ -23,7 +23,7 @@ dist: cmake build
 
 dist_prod: cmake_prod build_prod
 	mkdir dist
-	cp cmake-build-release/*libstd* dist/
+	cp cmake-build-release/*lib* dist/
 	cp rex/* dist/
 
 update_upstream:
