@@ -23,5 +23,6 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Windows")
     target_link_libraries(std wsock32 ws2_32)
 endif ()
 
+set(OPENSSL_USE_STATIC_LIBS TRUE)
 find_package(OpenSSL REQUIRED)
 target_link_libraries(std OpenSSL::SSL OpenSSL::Crypto)
