@@ -22,7 +22,7 @@ find_package(OpenSSL REQUIRED)
 target_link_libraries(std OpenSSL::SSL OpenSSL::Crypto)
 
 if (CMAKE_HOST_SYSTEM_NAME MATCHES "Windows")
-    file(GLOB FUCK_OPENSSL "${OPENSSL_INCLUDE_DIR}/../lib/*")
+    file(GLOB FUCK_OPENSSL "${OPENSSL_INCLUDE_DIR}/../*dll*")
     message(Hotpatch for Windows:\ ${OPENSSL_INCLUDE_DIR})
     file(COPY ${FUCK_OPENSSL} DESTINATION ${CMAKE_CURRENT_BINARY_DIR} FOLLOW_SYMLINK_CHAIN)
 

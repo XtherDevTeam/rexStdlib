@@ -18,7 +18,7 @@ clean_prod:
 
 dist: cmake build
 	mkdir dist
-	cp cmake-build-debug/*libstd* dist/
+	cp cmake-build-debug/*lib* dist/
 	cp rex/* dist/
 
 dist_prod: cmake_prod build_prod
