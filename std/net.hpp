@@ -37,6 +37,8 @@ namespace rexStd::net {
 
         nativeFn(close, interpreter, args, passThisPtr);
 
+        nativeFn(rexFree, interpreter, args, passThisPtr);
+
         nativeFn(setSendFlags, interpreter, args, passThisPtr);
 
         nativeFn(setRecvFlags, interpreter, args, passThisPtr);
@@ -56,6 +58,8 @@ namespace rexStd::net {
         nativeFn(recv, interpreter, args, passThisPtr);
 
         nativeFn(close, interpreter, args, passThisPtr);
+
+        nativeFn(rexFree, interpreter, args, passThisPtr);
 
         value::cxtObject getMethodsCxt(int fd);
     }

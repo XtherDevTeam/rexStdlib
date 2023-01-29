@@ -25,6 +25,8 @@ namespace rexStd::fs {
 
         nativeFn(close, interpreter, args, _);
 
+        nativeFn(rexFree, interpreter, args, _);
+
         value::cxtObject getMethodsCxt();
 
         value constructFileObject(FILE* fp = nullptr);

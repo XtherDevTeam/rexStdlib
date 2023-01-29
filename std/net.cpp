@@ -43,6 +43,7 @@ namespace rexStd::net {
             cxt[L"send"] = managePtr(value{value::nativeFuncPtr{send}});
             cxt[L"recv"] = managePtr(value{value::nativeFuncPtr{recv}});
             cxt[L"close"] = managePtr(value{value::nativeFuncPtr{close}});
+            cxt[L"rexFree"] = managePtr(value{value::nativeFuncPtr{rexFree}});
             cxt[L"setSendFlags"] = managePtr(value{value::nativeFuncPtr{setSendFlags}});
             cxt[L"getSendFlags"] = managePtr(value{value::nativeFuncPtr{getSendFlags}});
             cxt[L"setRecvFlags"] = managePtr(value{value::nativeFuncPtr{setRecvFlags}});
@@ -158,6 +159,11 @@ namespace rexStd::net {
             } catch (const std::runtime_error &error) {
                 throw signalException(interpreter::makeErr(L"netError", string2wstring(error.what())));
             }
+        }
+
+        nativeFn(rexFree, interpreter, args, passThisPtr) {
+            close(interpreter, args, passThisPtr);
+            return {};
         }
     }
 
@@ -593,6 +599,7 @@ namespace rexStd::net {
             cxt[L"recv"] = managePtr(value{value::nativeFuncPtr{recv}});
             cxt[L"send"] = managePtr(value{value::nativeFuncPtr{send}});
             cxt[L"close"] = managePtr(value{value::nativeFuncPtr{close}});
+            cxt[L"rexFree"] = managePtr(value{value::nativeFuncPtr{rexFree}});
 
             cxt[L"__sslinfo__"] = managePtr(value{(vint) 0});
             cxt[L"__fd__"] = managePtr(value{(vint) fd});
@@ -632,6 +639,11 @@ namespace rexStd::net {
 
         nativeFn(close, interpreter, args, passThisPtr) {
             libnet::sslClose((sslInfo *) passThisPtr->members[L"__sslinfo__"]->basicValue.unknown);
+            return {};
+        }
+
+        nativeFn(rexFree, interpreter, args, passThisPtr) {
+            close(interpreter, args, passThisPtr);
             return {};
         }
     }

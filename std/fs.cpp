@@ -101,6 +101,11 @@ namespace rexStd::fs {
         return {};
     }
 
+    nativeFn(file::rexFree, interpreter, args, _) {
+        close(interpreter, args, _);
+        return {};
+    }
+
     value::cxtObject file::getMethodsCxt() {
         value::cxtObject cxt;
         cxt[L"read"] = managePtr(value{(value::nativeFuncPtr) read});
@@ -109,6 +114,7 @@ namespace rexStd::fs {
         cxt[L"seek"] = managePtr(value{(value::nativeFuncPtr) seek});
         cxt[L"close"] = managePtr(value{(value::nativeFuncPtr) close});
         cxt[L"eof"] = managePtr(value{(value::nativeFuncPtr) eof});
+        cxt[L"rexFree"] = managePtr(value{value::nativeFuncPtr{rexFree}});
         return cxt;
     }
 

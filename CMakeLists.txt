@@ -17,7 +17,6 @@ add_library(std SHARED std/sqlite/sqlite3.c std/zip/zip.c ${REX_STDLIB_SRC} ${RE
 
 add_executable(test main.cpp ${REX_SRC})
 
-set(OPENSSL_USE_STATIC_LIBS TRUE)
 find_package(OpenSSL REQUIRED)
 target_link_libraries(std OpenSSL::SSL OpenSSL::Crypto)
 
