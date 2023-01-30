@@ -134,6 +134,9 @@ namespace rexStd::fs {
         cxt[L"getFileDir"] = managePtr(value{(value::nativeFuncPtr) getFileDir});
         cxt[L"copy"] = managePtr(value{(value::nativeFuncPtr) copy});
         cxt[L"temp"] = managePtr(value{(value::nativeFuncPtr) temp});
+        cxt[L"stdin"] = managePtr(value{(value::nativeFuncPtr) rexStdin});
+        cxt[L"stderr"] = managePtr(value{(value::nativeFuncPtr) rexStderr});
+        cxt[L"stdout"] = managePtr(value{(value::nativeFuncPtr) rexStdout});
 
         cxt[L"F_OK"] = managePtr(value{(vint) F_OK});
         cxt[L"W_OK"] = managePtr(value{(vint) W_OK});
@@ -141,6 +144,18 @@ namespace rexStd::fs {
         cxt[L"X_OK"] = managePtr(value{(vint) X_OK});
 
         return cxt;
+    }
+
+    nativeFn(rexStdin, interpreter, args, _) {
+        return file::constructFileObject(stdin);
+    }
+
+    nativeFn(rexStdout, interpreter, args, _) {
+        return file::constructFileObject(stdout);
+    }
+
+    nativeFn(rexStderr, interpreter, args, _) {
+        return file::constructFileObject(stderr);
     }
 
     nativeFn(temp, interpreter, args, _) {
