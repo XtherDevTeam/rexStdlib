@@ -2,6 +2,7 @@
 // Created by XIaokang00010 on 2022/12/30.
 //
 
+#include <cassert>
 #include <exceptions/signalException.hpp>
 #include "net/socket.hpp"
 #include "net.hpp"
