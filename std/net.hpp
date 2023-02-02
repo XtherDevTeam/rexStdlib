@@ -20,6 +20,10 @@ namespace rexStd::net {
         void send(interpreter *in, const managedPtr<value> &socketObject, const vstr &data);
 
         void send(interpreter *in, const managedPtr<value> &socketObject, const vbytes &data);
+
+        unsigned char toHex(unsigned char x);
+
+        unsigned char fromHex(unsigned char x);
     }
 
     namespace socket {
@@ -84,6 +88,10 @@ namespace rexStd::net {
         nativeFn(parseUrl, interpreter, args, passThisPtr);
 
         nativeFn(generateHttpHeader, interpreter, args, passThisPtr);
+
+        nativeFn(decodeUrl, interpreter, args, passThisPtr);
+
+        nativeFn(encodeUrl, interpreter, args, passThisPtr);
 
         nativeFn(open, interpreter, args, passThisPtr);
 

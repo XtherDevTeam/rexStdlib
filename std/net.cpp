@@ -169,9 +169,9 @@ namespace rexStd::net {
 
     namespace http {
         nativeFn(parseHttpHeader, interpreter, args, passThisPtr) {
-            auto lowerCase = [] (const vstr &str) {
+            auto lowerCase = [](const vstr &str) {
                 vstr result{str};
-                for (auto &i : result) {
+                for (auto &i: result) {
                     if (i >= 'A' and i <= 'Z')
                         i += 32;
                 }
@@ -282,6 +282,40 @@ namespace rexStd::net {
             return result;
         }
 
+        nativeFn(decodeUrl, interpreter, args, passThisPtr) {
+            vbytes &str = eleGetRef(args[0]).getBytes();
+            std::string strTemp;
+            size_t length = str.length();
+            for (size_t i = 0; i < length; i++) {
+                if (str[i] == '+') strTemp += ' ';
+                else if (str[i] == '%') {
+                    assert(i + 2 < length);
+                    unsigned char high = utils::fromHex((unsigned char) str[++i]);
+                    unsigned char low = utils::fromHex((unsigned char) str[++i]);
+                    strTemp += high * 16 + low;
+                } else { strTemp += str[i]; }
+            }
+            return {strTemp, rex::bytesMethods::getMethodsCxt()};
+        }
+
+        nativeFn(encodeUrl, interpreter, args, passThisPtr) {
+            vbytes &str = eleGetRef(args[0]).getBytes();
+            std::string strTemp = "";
+            size_t length = str.length();
+            for (size_t i = 0; i < length; i++) {
+                if (isalnum((unsigned char) str[i]) || (str[i] == '-') || (str[i] == '_') || (str[i] == '.') ||
+                    (str[i] == '~'))
+                    strTemp += str[i];
+                else if (str[i] == ' ')
+                    strTemp += "+";
+                else {
+                    strTemp += '%';
+                    strTemp += utils::toHex((unsigned char) str[i] >> 4);
+                    strTemp += utils::toHex((unsigned char) str[i] % 16);
+                }
+            }
+            return {strTemp, rex::bytesMethods::getMethodsCxt()};
+        }
 
         nativeFn(sendForm, interpreter, args, passThisPtr) {
             return sendFormCallableObject::getMethodsCxt(args[0], args[1]);
@@ -429,6 +463,8 @@ namespace rexStd::net {
             result[L"generateHttpHeader"] = managePtr(value{value::nativeFuncPtr{generateHttpHeader}});
             result[L"open"] = managePtr(value{value::nativeFuncPtr{open}});
             result[L"sendForm"] = managePtr(value{value::nativeFuncPtr{sendForm}});
+            result[L"encodeUrl"] = managePtr(value{value::nativeFuncPtr{encodeUrl}});
+            result[L"decodeUrl"] = managePtr(value{value::nativeFuncPtr{decodeUrl}});
             return result;
         }
 
@@ -664,6 +700,21 @@ namespace rexStd::net {
 
         void send(interpreter *in, const managedPtr<value> &socketObject, const vbytes &data) {
             in->invokeFunc(socketObject->members[L"send"], {{data, bytesMethods::getMethodsCxt()}}, socketObject);
+        }
+
+        unsigned char fromHex(unsigned char x) {
+
+            unsigned char y;
+            if (x >= 'A' && x <= 'Z') y = x - 'A' + 10;
+            else if (x >= 'a' && x <= 'z') y = x - 'a' + 10;
+            else if (x >= '0' && x <= '9') y = x - '0';
+            else
+                assert(0);
+            return y;
+        }
+
+        unsigned char toHex(unsigned char x) {
+            return x > 9 ? x + 55 : x + 48;
         }
     }
 }
