@@ -276,7 +276,7 @@ namespace rexStd::net {
             }
 
             for (auto &section: headerObject[L"sections"]->members) {
-                result.getStr() += section.first + L" " + section.second->getStr() + L"\r\n";
+                result.getStr() += section.first + L": " + section.second->getStr() + L"\r\n";
             }
             result.getStr() += L"\r\n";
             return result;
