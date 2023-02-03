@@ -97,7 +97,7 @@ namespace rexStd::net {
         nativeFn(accept, interpreter, args, passThisPtr) {
             vint &socketFd = passThisPtr->members[L"__fd__"]->getInt();
             struct sockaddr_in clientAddr{};
-            socklen_t clientAddrLen{};
+            socklen_t clientAddrLen{sizeof(sockaddr)};
             try {
                 return {getMethodsCxt(libnet::socketAccept((int) socketFd, clientAddr, clientAddrLen))};
             } catch (const std::runtime_error &error) {
