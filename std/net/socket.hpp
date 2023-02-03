@@ -142,11 +142,11 @@ namespace libnet {
     }
 
     int socketAccept(int fd, struct sockaddr_in &clientAddr, socklen_t &clientAddrLen) {
-        if (auto nfd = accept(fd, (struct sockaddr *) &clientAddr, &clientAddrLen); nfd < -1) {
+        if (auto nfd = accept(fd, (struct sockaddr *) &clientAddr, &clientAddrLen); nfd > 0) {
             socketStartupInstance.fdSet->insert(nfd);
-            throw std::runtime_error("libnet: error accepting incoming connection");
-        } else {
             return nfd;
+        } else {
+            throw std::runtime_error("libnet: error accepting incoming connection");
         }
     }
 
